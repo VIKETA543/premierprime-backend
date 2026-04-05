@@ -58,7 +58,7 @@ router.post('/addcart', upload.single('IMAGE'), async (req, res) => {
 
         const fileUrl = `${req.protocol}://${req.get('host')}/category_images/${req.file.filename}`;
         console.log(fileUrl)
-        // ${req.file.filename}
+    
         let imgData = req.file
         // console.log(imgData)
         res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
@@ -216,8 +216,8 @@ router.post('/addproduct', pro_upload.single('IMAGE'), cors({ origin: '*' }), as
         await pool.connect().then(async (r) => {
             if (r._connected) {
                 try {
-                    query = "INSERT INTO products(serialnumber,name,description,image,category,date_created,imageurl,groupid)VALUES($1,$2,$3,$4,$5,$6,$7,$8)"
-                    r.query(query, [data.productId, data.productName, data.description, imgData.originalname, data.catergory, data.date, fileUrl, data.groupid], (error, results) => {
+                    query = "INSERT INTO products(serialnumber,name,description,image,category,date_created,imageurl)VALUES($1,$2,$3,$4,$5,$6,$7)"
+                    r.query(query, [data.productId, data.productName, data.description, imgData.originalname, data.catergory, data.date, fileUrl], (error, results) => {
                         if (error) {
                             console.log(error)
                             r.release()
@@ -248,185 +248,186 @@ router.post('/addproduct', pro_upload.single('IMAGE'), cors({ origin: '*' }), as
     }
 })
 
-const grpu_storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, './uploads/group_images'); // Make sure this 'uploads' directory exists
-    },
-    filename: function (req, file, cb) {
-        cb(null, file.originalname); // Add timestamp to avoid name conflicts
-    }
-});
-const grp_upload = multer({ storage: grpu_storage });
+// const grpu_storage = multer.diskStorage({
+//     destination: function (req, file, cb) {
+//         cb(null, './uploads/group_images'); // Make sure this 'uploads' directory exists
+//     },
+//     filename: function (req, file, cb) {
+//         cb(null, file.originalname); // Add timestamp to avoid name conflicts
+//     }
+// });
+// const grp_upload = multer({ storage: grpu_storage });
 
 
-router.post('/addgroup', grp_upload.single('image'), cors({ origin: '*' }), async (req, res) => {
+// router.post('/addgroup', grp_upload.single('image'), cors({ origin: '*' }), async (req, res) => {
 
-    let data = req.body
+//     let data = req.body
 
-    if (!req.file) {
-        return res.status(400).send('No file uploaded.');
-    } else {
+//     if (!req.file) {
+//         return res.status(400).send('No file uploaded.');
+//     } else {
 
-        const fileUrl = `${req.protocol}://${req.get('host')}/group_images/${req.file.filename}`;
-        console.log(fileUrl)
-        // ${req.file.filename}
-        let imgData = req.file
-        // console.log(imgData)
-        res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
-        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
-        res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-        console.log(data)
-        await pool.connect().then(async (r) => {
-            if (r._connected) {
-                try {
-                    query = "INSERT INTO targetgroup(groupID,title,role,image,productcart,date_created,imageurl)VALUES($1,$2,$3,$4,$5,$6,$7)"
-                    r.query(query, [data.groupId, data.groupName, data.groupRole, imgData.originalname, data.serialnumber, new Date(), fileUrl], (error, results) => {
-                        if (error) {
-                            console.log("The error ", error)
-                            r.release()
-                            return res.status(200).json({ message: error.detail })
+//         const fileUrl = `${req.protocol}://${req.get('host')}/group_images/${req.file.filename}`;
+//         console.log(fileUrl)
+//         // ${req.file.filename}
+//         let imgData = req.file
+//         // console.log(imgData)
+//         res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+//         res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+//         res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+//         console.log(data)
+//         await pool.connect().then(async (r) => {
+//             if (r._connected) {
+//                 try {
+//                     query = "INSERT INTO targetgroup(groupID,title,role,image,productcart,date_created,imageurl)VALUES($1,$2,$3,$4,$5,$6,$7)"
+//                     r.query(query, [data.groupId, data.groupName, data.groupRole, imgData.originalname, data.serialnumber, new Date(), fileUrl], (error, results) => {
+//                         if (error) {
+//                             console.log("The error ", error)
+//                             r.release()
+//                             return res.status(200).json({ message: error.detail })
                             
-                        } else {
-                            //         
-                            if (results.rowCount > 0) {
-                                console.log(results)
-                                r.release()
-                                return res.status(200).json({ success: "Request was successful" })
-                            } else {
-                                r.release()
-                                return res.status(200).json({ message: "Request failed" })
-                            }
-                        }
-                    })
-                } catch (error) {
-                    console.log(error.error)
-                    r.release()
-                    return res.status(200).json({ message: "Internal error occured" })
-                }
-            } else {
-                r.release()
-                return res.status(200).json({ message: "Connection failed" })
-            }
+//                         } else {
+//                             //         
+//                             if (results.rowCount > 0) {
+//                                 console.log(results)
+//                                 r.release()
+//                                 return res.status(200).json({ success: "Request was successful" })
+//                             } else {
+//                                 r.release()
+//                                 return res.status(200).json({ message: "Request failed" })
+//                             }
+//                         }
+//                     })
+//                 } catch (error) {
+//                     console.log(error.error)
+//                     r.release()
+//                     return res.status(200).json({ message: "Internal error occured" })
+//                 }
+//             } else {
+//                 r.release()
+//                 return res.status(200).json({ message: "Connection failed" })
+//             }
 
-        })
+//         })
 
-    }
-})
-
-
+//     }
+// })
 
 
 
-router.get('/gtgroup', cors({ origin: '*' }), async (req, res) => {
-    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
-    await pool.connect().then(async (r) => {
-        if (r._connected) {
-            try {
-                const results = await r.query("SELECT targetgroup.groupID,targetgroup.title,targetgroup.role,targetgroup.image,targetgroup.productcart,targetgroup.date_created,targetgroup.imageurl,prodcart.category_name FROM targetgroup LEFT JOIN prodcart ON targetgroup.productcart=prodcart.serialnumber")
-                let rs = results.rows
-
-                if (rs.length > 0) {
-                    //  console.log("Rows",rs)
-                    r.release()
-                    return res.status(200).json({ data: results.rows })
-                } else {
-                    console.log("NO activity")
-                    return res.status(200).json({ message: "No Activity" })
-                }
-            } catch (error) {
-                console.log(error)
-                return res.status(200).json({ message: "Internal error occured" })
-            }
-        } else {
-            r.release()
-            return res.status(200).json({ message: "Connection failed" })
-        }
-
-    })
-})
-
-router.post('/droptgrp', cors({ origin: '*' }), async (req, res) => {
-    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-    let data = req.body
-    console.log("the body", data)
-    await pool.connect().then(async (r) => {
-        if (r._connected) {
-            try {
-                query = "DELETE FROM  targetgroup WHERE groupid=$1 RETURNING *"
-                r.query(query, [data.groupID], (error, results) => {
-                    if (error) {
-                        console.log(error)
-                        r.release()
-                    } else {
-                        console.log(results)
-                        if (results.rowCount > 0) {
-                            console.log(results)
-                            r.release()
-                            return res.status(200).json({ success: "Request was successful" })
-                        } else {
-                            r.release()
-                            return res.status(200).json({ message: "Request failed" })
-                        }
-                    }
-                })
-            } catch (error) {
-                console.log(error)
-                r.release()
-                return res.status(200).json({ message: "Internal error occured" })
-            }
-        } else {
-            r.release()
-            return res.status(200).json({ message: "Connection failed" })
-        }
-
-    })
 
 
-})
+// router.get('/gtgroup', cors({ origin: '*' }), async (req, res) => {
+//     res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+//     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+//     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+//     await pool.connect().then(async (r) => {
+//         if (r._connected) {
+//             try {
+//                 const results = await r.query("SELECT targetgroup.groupID,targetgroup.title,targetgroup.role,targetgroup.image,targetgroup.productcart,targetgroup.date_created,targetgroup.imageurl,prodcart.category_name FROM targetgroup LEFT JOIN prodcart ON targetgroup.productcart=prodcart.serialnumber")
+//                 let rs = results.rows
+
+//                 if (rs.length > 0) {
+//                     //  console.log("Rows",rs)
+//                     r.release()
+//                     return res.status(200).json({ data: results.rows })
+//                 } else {
+//                     console.log("NO activity")
+//                     return res.status(200).json({ message: "No Activity" })
+//                 }
+//             } catch (error) {
+//                 console.log(error)
+//                 return res.status(200).json({ message: "Internal error occured" })
+//             }
+//         } else {
+//             r.release()
+//             return res.status(200).json({ message: "Connection failed" })
+//         }
+
+//     })
+// })
+
+// router.post('/droptgrp', cors({ origin: '*' }), async (req, res) => {
+//     res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+//     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+//     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+//     let data = req.body
+//     console.log("the body", data)
+//     await pool.connect().then(async (r) => {
+//         if (r._connected) {
+//             try {
+//                 query = "DELETE FROM  targetgroup WHERE groupid=$1 RETURNING *"
+//                 r.query(query, [data.groupID], (error, results) => {
+//                     if (error) {
+//                         console.log(error)
+//                         r.release()
+//                     } else {
+//                         console.log(results)
+//                         if (results.rowCount > 0) {
+//                             console.log(results)
+//                             r.release()
+//                             return res.status(200).json({ success: "Request was successful" })
+//                         } else {
+//                             r.release()
+//                             return res.status(200).json({ message: "Request failed" })
+//                         }
+//                     }
+//                 })
+//             } catch (error) {
+//                 console.log(error)
+//                 r.release()
+//                 return res.status(200).json({ message: "Internal error occured" })
+//             }
+//         } else {
+//             r.release()
+//             return res.status(200).json({ message: "Connection failed" })
+//         }
+
+//     })
 
 
-router.post('/selgrp', cors({ origin: '*' }), async (req, res) => {
-    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
-    let data = req.body
-    console.log("Rows", data)
-    await pool.connect().then(async (r) => {
-        if (r._connected) {
-            try {
-                query = "SELECT targetgroup.groupID,targetgroup.title,targetgroup.role,targetgroup.image,targetgroup.productcart,targetgroup.date_created,targetgroup.imageurl,prodcart.category_name FROM targetgroup LEFT JOIN prodcart ON targetgroup.productcart=prodcart.serialnumber WHERE targetgroup.groupID=$1"
-                r.query(query, [data.GroupID], (error, results) => {
-                    let rs = results.rows;
-                    if (rs.length > 0) {
-                        console.log("Rows", rs)
-                        r.release()
-                        return res.status(200).json({ data: results.rows })
-                    } else {
-                        console.log("NO activity")
-                        return res.status(200).json({ message: "No Activity" })
-                    }
-
-                })
+// })
 
 
+// router.post('/selgrp', cors({ origin: '*' }), async (req, res) => {
+//     res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+//     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+//     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+//     let data = req.body
+//     console.log("Rows", data)
+//     await pool.connect().then(async (r) => {
+//         if (r._connected) {
+//             try {
+//                 query = "SELECT targetgroup.groupID,targetgroup.title,targetgroup.role,targetgroup.image,targetgroup.productcart,targetgroup.date_created,targetgroup.imageurl,prodcart.category_name FROM targetgroup LEFT JOIN prodcart ON targetgroup.productcart=prodcart.serialnumber WHERE targetgroup.groupID=$1"
+//                 r.query(query, [data.GroupID], (error, results) => {
+//                     let rs = results.rows;
+//                     if (rs.length > 0) {
+//                         console.log("Rows", rs)
+//                         r.release()
+//                         return res.status(200).json({ data: results.rows })
+//                     } else {
+//                         console.log("NO activity")
+//                         return res.status(200).json({ message: "No Activity" })
+//                     }
 
-            } catch (error) {
-                console.log(error)
-                return res.status(200).json({ message: "Internal error occured" })
-            }
-        } else {
-            r.release()
-            return res.status(200).json({ message: "Connection failed" })
-        }
+//                 })
 
-    })
-})
+
+
+//             } catch (error) {
+//                 console.log(error)
+//                 return res.status(200).json({ message: "Internal error occured" })
+//             }
+//         } else {
+//             r.release()
+//             return res.status(200).json({ message: "Connection failed" })
+//         }
+
+//     })
+// })
 
 router.get('/listbrnd', cors({ origin: '*' }), async (req, res) => {
+
     res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
@@ -455,6 +456,46 @@ router.get('/listbrnd', cors({ origin: '*' }), async (req, res) => {
 
     })
 })
+// 
+
+router.post('/listbrndbyID', cors({ origin: '*' }), async (req, res) => {
+    let data=req.body
+    console.log("Loading=",data)
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            try {
+                query="SELECT brandid,title,role,image,date_created,imageurl FROM productbrand WHERE productid=$1"
+            r.query(query,[data.selectedproduct],(error,results)=>{
+                if(error){
+                    console.log(error)
+                }else{
+                                 console.log(results.rows)
+                    if(results.rows.length>0){
+                          let rs =results.rows
+
+                                 r.release()
+                    return res.status(200).json({ data: results.rows })
+                    }else{
+             
+                    return res.status(200).json({ message: "No Brands have been added to this product" })
+                    }
+                }
+
+            })
+                          } catch (error) {
+                console.log(error)
+                return res.status(200).json({ message: "Internal error occured" })
+            }
+        } else {
+            r.release()
+            return res.status(200).json({ message: "Connection failed" })
+        }
+
+    })
+})
 
 router.get('/brnddata', cors({ origin: '*' }), async (req, res) => {
     res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
@@ -463,7 +504,7 @@ router.get('/brnddata', cors({ origin: '*' }), async (req, res) => {
     await pool.connect().then(async (r) => {
         if (r._connected) {
             try {
-                const results = await r.query("SELECT productbrand.brandid,productbrand.title,productbrand.role,productbrand.image,productbrand.productcart,productbrand.date_created,productbrand.imageurl,prodcart.category_name FROM productbrand LEFT JOIN prodcart ON productbrand.productcart=prodcart.serialnumber")
+                const results = await r.query("SELECT productbrand.brandid,productbrand.title,productbrand.role,productbrand.image,productbrand.productid,productbrand.date_created,productbrand.imageurl,products.name,prodcart.category_name FROM productbrand LEFT JOIN products ON productbrand.productid=products.serialnumber LEFT JOIN prodcart ON products.category=prodcart.serialnumber ")
                 let rs = results.rows
 
                 if (rs.length > 0) {
@@ -590,7 +631,7 @@ router.post('/addbrnd', brand_upload.single('image'), cors({ origin: '*' }), asy
         await pool.connect().then(async (r) => {
             if (r._connected) {
                 try {
-                    query="INSERT INTO productbrand(brandid,title,role,image,date_created,imageurl,productcart) VALUES($1,$2,$3,$4,$5,$6,$7)"
+                    query="INSERT INTO productbrand(brandid,title,role,image,date_created,imageurl,productid) VALUES($1,$2,$3,$4,$5,$6,$7)"
                     r.query(query,[data.BrandId,data.BrandName,data.BrandRole,imgData.filename,new Date(),fileUrl,data.serialnumber],(error,results)=>{
                         if(error){
                                     console.log("The error ", error)
@@ -622,7 +663,7 @@ router.get('/listprices', cors({ origin: '*' }), async (req, res) => {
     await pool.connect().then(async (r) => {
         if (r._connected) {
 
-            query= "SELECT productid,price,productid,priceid FROM productprice";
+            query= "SELECT productid,productid,orderprice,totalordercost,marupprice,unitesellingprice,cartsellingprice FROM productprice";
             r.query(query,(error,results)=>{
                 if(error){
                           console.log("The error ", error)
@@ -631,7 +672,7 @@ router.get('/listprices', cors({ origin: '*' }), async (req, res) => {
                 }else{
                     if(results.rows.length>0){
                           let rs = results.rows
-                           console.log("Rows", rs)
+                        //    console.log("Rows", rs)
                     r.release()
                     return res.status(200).json({ data: rs })
                     }else{
@@ -667,7 +708,7 @@ router.get('/listpriceTag', cors({ origin: '*' }), async (req, res) => {
                 }else{
                     if(results.rows.length>0){
                           let rs = results.rows
-                           console.log("Rows", rs)
+                        //    console.log("Rows", rs)
                     r.release()
                     return res.status(200).json({ data: rs })
                     }else{
@@ -724,40 +765,7 @@ router.post('/submitquote', cors({ origin: '*' }), async (req, res) => {
 })  
 
 //price tag details
-router.get('/priceTagdetails', cors({ origin: '*' }), async (req, res) => {
-     res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
-    let data=req.body
-              
-    await pool.connect().then(async (r) => {
-        if (r._connected) {
-
-            query= "SELECT sn,pricetagid,pricetag,datemodified,description,auth FROM pricetag";
-            r.query(query,(error,results)=>{
-                if(error){
-                          console.log("The error ", error)
-                                    r.release();
-                            return res.status(400).json({ message: error.detail })
-                }else{
-                    if(results.rows.length>0){
-                          let rs = results.rows
-                           console.log("Rows", rs)
-                    r.release()
-                    return res.status(200).json({ data: rs })
-                    }else{
-                        r.release();
-                        console.log("Price Tag not set")
-                        return res.status(201).json({message:"No activity"})
-                    }
-                }  
-
-            })
-            }  
-
-    }) 
-})        
-// 
+ 
 
 router.post('/droppricetag', cors({ origin: '*' }), async (req, res) => {
     res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
@@ -843,78 +851,10 @@ router.post('/authtag', cors({ origin: '*' }), async (req, res) => {
 
 // loading product price details
 
-router.get('/propricedetails', cors({ origin: '*' }), async (req, res) => {
-     res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
-
-              
-    await pool.connect().then(async (r) => {
-        if (r._connected) {
-
-            query= "SELECT productprice.productid,products.name,productprice.category,prodcart.category_name,productprice.brand,productbrand.title,productprice.targetgroup,targetgroup.title,productprice.price,productprice.priceid FROM productprice LEFT JOIN products ON  productprice.productid=products.serialnumber LEFT JOIN prodcart ON productprice.category=prodcart.serialnumber LEFT JOIN productbrand ON productprice.brand=productbrand.brandid LEFT JOIN targetgroup ON productprice.targetgroup=targetgroup.groupid";
-            r.query(query,(error,results)=>{
-                if(error){
-                          console.log("The error ", error)
-                                    r.release();
-                            return res.status(400).json({ message: error.detail })
-                }else{
-                    if(results.rows.length>0){
-                          let rs = results.rows
-                           console.log("Rows", rs)
-                    r.release()
-                    return res.status(200).json({ data: rs })
-                    }else{
-                        r.release();
-                        console.log("Price Tag not set")
-                        return res.status(201).json({message:"No price activity"})
-                    }
-                }  
-
-            })
-            }  
-
-    }) 
-}) 
 
 
 
 
-// 
-router.post('/searchproductprices', cors({ origin: '*' }), async (req, res) => {
-     res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
-
-              let data=req.body
-              console.log(data)
-    await pool.connect().then(async (r) => {
-        if (r._connected) {
-
-            query= "SELECT productprice.productid,products.name,productprice.category,prodcart.category_name,productprice.brand,productbrand.title,productprice.targetgroup,targetgroup.title,productprice.price,productprice.priceid FROM productprice LEFT JOIN products ON  productprice.productid=products.serialnumber LEFT JOIN prodcart ON productprice.category=prodcart.serialnumber LEFT JOIN productbrand ON productprice.brand=productbrand.brandid LEFT JOIN targetgroup ON productprice.targetgroup=targetgroup.groupid WHERE productprice.productid=$1"  ;
-            r.query(query,[data.selectedproduct],(error,results)=>{
-                if(error){
-                          console.log("The error ", error)
-                                    r.release();
-                            return res.status(400).json({ message: error.detail })
-                }else{
-                    if(results.rows.length>0){
-                          let rs = results.rows
-                           console.log("Rows", rs)
-                    r.release()
-                    return res.status(200).json({ data: rs })
-                    }else{
-                        r.release();
-                        console.log("Price Tag not set")
-                        return res.status(201).json({message:"No price activity"})
-                    }
-                }  
-
-            })
-            }  
-
-    }) 
-}) 
 
 
 module.exports = router       

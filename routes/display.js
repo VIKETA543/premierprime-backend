@@ -51,7 +51,7 @@ router.get('/listproduct',cors({ origin: '*' }),async (req,res)=>{
    await pool.connect().then(async (r)=>{
     if(r._connected){
         try{
-          query="SELECT serialnumber,name,image,category,imageurl FROM products"
+          query="SELECT products.serialnumber,products.name,products.image,products.category,products.imageurl,products.description,prodcart.category_name,products.date_created FROM products LEFT JOIN prodcart ON products.category=prodcart.serialnumber"
           r.query(query, (error, results) => {
             if(error){
                 r.release()
@@ -83,6 +83,48 @@ router.get('/listproduct',cors({ origin: '*' }),async (req,res)=>{
   })
 }) 
 
+
+
+router.post('/listproductbyCart',cors({ origin: '*' }),async (req,res)=>{
+  let data=req.body
+
+       res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+   await pool.connect().then(async (r)=>{
+    if(r._connected){
+        try{
+          query="SELECT serialnumber,name,image,category,imageurl FROM products WHERE category=$1"
+          r.query(query, [data.cartID], (error, results) => {
+            if(error){
+                r.release()
+            console.log(error)
+            }else{
+             
+              if(results.rows.length>0){
+                //  console.log("rows numbers=>",results.rows)
+                  r.release()
+        return res.status(200).json({data:results.rows})
+              }else{
+                 r.release()
+         
+                 return res.status(200).json({message:"No product has been assigned to the category"})
+              }
+            }
+
+          })
+        }catch(error){
+               r.release()
+            console.log(error)
+                 return res.status(200).json({message:"Internal error occured"})
+        }
+    }else{
+          r.release()
+       return res.status(200).json({message:"Connection failed"})  
+    }
+       
+  })
+}) 
 
 
 router.get('/trending',cors({ origin: '*' }),async (req,res)=>{
