@@ -4,15 +4,15 @@ const cors = require('cors');
 require('dotenv').config()
 const router=express.Router()
 
-router.get('/display',cors({ origin: '*' }),async (req,res)=>{
+router.get('/displayProducts',cors({ origin: '*' }),async (req,res)=>{
        res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
    await pool.connect().then(async (r)=>{
     if(r._connected){
         try{
-          query="SELECT * FROM products WHERE productstate = $1"
-          r.query(query, ['NEW ARRIVAL'], (error, results) => {
+          query="SELECT products.serialnumber,products.name,products.description,products.image,products.inventorystatus,prodcart.category_name,productbrand.title,productbrand.imageurl,productprice.unitesellingprice FROM products LEFT JOIN prodcart ON  products.category=prodcart.serialnumber LEFT JOIN productbrand ON products.serialnumber=productbrand.productid LEFT JOIN productprice ON productbrand.brandid=productprice.brandid"
+          r.query(query, (error, results) => {
             if(error){
                 r.release()
             console.log(error)
