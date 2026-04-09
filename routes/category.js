@@ -4,8 +4,11 @@ const cors = require('cors');
 require('dotenv').config()
 const router = express.Router()
 const multer = require('multer')
+const { put } = require('@vercel/blob');
+ 
 
 
+const config = { api: { bodyParser: false } };
 
 router.get('/cartlist', cors({ origin: '*' }), async (req, res) => {
     res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
@@ -41,22 +44,32 @@ router.get('/cartlist', cors({ origin: '*' }), async (req, res) => {
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, './uploads/category_images'); // Make sure this 'uploads' directory exists
-    },
+    }, 
     filename: function (req, file, cb) {
         cb(null, file.originalname); // Add timestamp to avoid name conflicts
     }
 });
-const upload = multer({ storage: storage });
+const upload = multer({ storage:  multer.memoryStorage()  });
 
 
 router.post('/addcart', upload.single('IMAGE'), async (req, res) => {
     let data = req.body
 
     if (!req.file) {
+     
         return res.status(400).send('No file uploaded.');
     } else {
 
-        const fileUrl = `${req.protocol}://${req.get('host')}/category_images/${req.file.filename}`;
+
+     const blob = await put(`uploads/category_images/${req.file.originalname}`, req.file.buffer, {
+      access: 'public',
+        allowOverwrite: true,
+
+    });
+
+
+
+        // const fileUrl = `${req.protocol}://${req.get('host')}/category_images/${req.file.filename}`;
         console.log(fileUrl)
     
         let imgData = req.file
@@ -69,7 +82,7 @@ router.post('/addcart', upload.single('IMAGE'), async (req, res) => {
             if (r._connected) {
                 try {
                     query = "INSERT INTO prodcart(serialnumber,category_name,description,image,date_updated,ImageUrl)VALUES($1,$2,$3,$4,$5,$6)"
-                    r.query(query, [data.serialnumber, data.newCategory, data.description, imgData.originalname, data.date, fileUrl], (error, results) => {
+                    r.query(query, [data.serialnumber, data.newCategory, data.description, imgData.originalname, data.date, blob.url], (error, results) => {
                         if (error) {
                             console.log(error)
                             r.release()
@@ -191,10 +204,8 @@ const pro_storage = multer.diskStorage({
         cb(null, file.originalname); // Add timestamp to avoid name conflicts
     }
 });
-const pro_upload = multer({ storage: pro_storage });
-
-
-
+// const pro_upload = multer({ storage: pro_storage });
+   const pro_upload = multer({ storage:  multer.memoryStorage()  });
 
 
 router.post('/addproduct', pro_upload.single('IMAGE'), cors({ origin: '*' }), async (req, res) => {
@@ -204,11 +215,22 @@ router.post('/addproduct', pro_upload.single('IMAGE'), cors({ origin: '*' }), as
         return res.status(400).send('No file uploaded.');
     } else {
 
-        const fileUrl = `${req.protocol}://${req.get('host')}/product_images/${req.file.filename}`;
-        console.log(fileUrl)
+        // const fileUrl = `${req.protocol}://${req.get('host')}/product_images/${req.file.filename}`;
+        // console.log(fileUrl)
         // ${req.file.filename}
         let imgData = req.file
         // console.log(imgData)
+     
+     const blob = await put(`uploads/product_images/${req.file.originalname}`, req.file.buffer, {
+      access: 'public',
+        allowOverwrite: true,
+
+    });
+
+
+console.log(blob.url)
+
+
         res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
         res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
         res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
@@ -217,7 +239,7 @@ router.post('/addproduct', pro_upload.single('IMAGE'), cors({ origin: '*' }), as
             if (r._connected) {
                 try {
                     query = "INSERT INTO products(serialnumber,name,description,image,category,date_created,imageurl)VALUES($1,$2,$3,$4,$5,$6,$7)"
-                    r.query(query, [data.productId, data.productName, data.description, imgData.originalname, data.catergory, data.date, fileUrl], (error, results) => {
+                    r.query(query, [data.productId, data.productName, data.description, imgData.originalname, data.catergory, data.date, blob.url], (error, results) => {
                         if (error) {
                             console.log(error)
                             r.release()
@@ -612,8 +634,8 @@ const brand_storage = multer.diskStorage({
         cb(null, file.originalname); // Add timestamp to avoid name conflicts
     }
 });
-const brand_upload = multer({ storage: brand_storage });
-
+// const brand_upload = multer({ storage: brand_storage });
+   const brand_upload = multer({ storage:  multer.memoryStorage()  });
 router.post('/addbrnd', brand_upload.single('image'), cors({ origin: '*' }), async (req, res) => {
 
     let data = req.body
@@ -621,8 +643,14 @@ router.post('/addbrnd', brand_upload.single('image'), cors({ origin: '*' }), asy
     if (!req.file) {
         return res.status(400).json({ message: 'Invalid file' });
     } else {
+     
+     const blob = await put(`uploads/brand_images/${req.file.originalname}`, req.file.buffer, {
+      access: 'public',
+        allowOverwrite: true,
 
-        const fileUrl = `${req.protocol}://${req.get('host')}/brand_images/${req.file.filename}`;
+    });
+
+        // const fileUrl = `${req.protocol}://${req.get('host')}/brand_images/${req.file.filename}`;
         console.log(data)
         let imgData = req.file
         res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
@@ -632,7 +660,7 @@ router.post('/addbrnd', brand_upload.single('image'), cors({ origin: '*' }), asy
             if (r._connected) {
                 try {
                     query="INSERT INTO productbrand(brandid,title,role,image,date_created,imageurl,productid) VALUES($1,$2,$3,$4,$5,$6,$7)"
-                    r.query(query,[data.BrandId,data.BrandName,data.BrandRole,imgData.filename,new Date(),fileUrl,data.serialnumber],(error,results)=>{
+                    r.query(query,[data.BrandId,data.BrandName,data.BrandRole,imgData.filename,new Date(),blob.url,data.serialnumber],(error,results)=>{
                         if(error){
                                     console.log("The error ", error)
                                     r.release();
@@ -830,7 +858,6 @@ router.post('/authtag', cors({ origin: '*' }), async (req, res) => {
                            r.release()
                             return res.status(200).json({ message: "Sorry, update failed" })  
                         }
-                     
                     }
                 }) 
             } catch (error) {
