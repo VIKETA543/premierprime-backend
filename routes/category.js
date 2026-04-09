@@ -70,7 +70,7 @@ router.post('/addcart', upload.single('IMAGE'), async (req, res) => {
 
 
         // const fileUrl = `${req.protocol}://${req.get('host')}/category_images/${req.file.filename}`;
-        console.log(fileUrl)
+        // console.log(fileUrl)
     
         let imgData = req.file
         // console.log(imgData)
