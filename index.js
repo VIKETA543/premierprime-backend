@@ -4,6 +4,7 @@ const connecion = require('./dbconnectivity')
 const Display = require('./routes/display')
 const Category = require('./routes/category')
 const Prices = require('./routes/prices')
+const Suppliers=require('./routes/supplier')
 const app = express();
 const path = require('path');
 
@@ -15,6 +16,7 @@ app.use(express.json())
 app.use('/display', Display)
 app.use('/category', Category)
 app.use('/prices', Prices)
+app.use('/supplier', Suppliers)
 
-//  app.use('/uploads', express.static('/category_images')); 
+
 module.exports = app;

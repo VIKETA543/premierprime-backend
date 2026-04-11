@@ -164,7 +164,7 @@ router.get('/trending',cors({ origin: '*' }),async (req,res)=>{
   })
 })
 
-
+      
 
 router.get('/cartegories',cors({ origin: '*' }),async (req,res)=>{
      res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
@@ -173,7 +173,7 @@ router.get('/cartegories',cors({ origin: '*' }),async (req,res)=>{
    await pool.connect().then(async (r)=>{
     if(r._connected){
         try{
-             const results =await r.query("SELECT serialnumber,category_name,image,imageurl FROM prodcart")
+             const results =await r.query("SELECT serialnumber,category_name,image,imageurl,description FROM prodcart")
             let rs=results.rows
             // console.log("Rows",rs)
                 if(rs.length>0){
