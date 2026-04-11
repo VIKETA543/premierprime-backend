@@ -313,4 +313,39 @@ router.post('/searchPricesbyTag', cors({ origin: '*' }), async (req, res) => {
 }) 
 
 
+
+
+router.post('/findsupplierprice', cors({ origin: '*' }), async (req, res) => {
+     res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+              let data=req.body
+
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+
+            query= "SELECT marketprice FROM supplierprices WHERE brandid=$1"  ;
+            r.query(query,[data.brandid],(error,results)=>{
+                if(error){
+                          console.log("The error ", error)
+                                    r.release();
+                            return res.status(400).json({ message: error.detail })
+                }else{
+                    if(results.rows.length>0){
+                          let rs = results.rows
+                        console.log(rs)
+                    r.release()
+                    return res.status(200).json({ data: rs })
+                    }else{
+                        r.release();
+
+                        return res.status(201).json({message:"No products prices have been assigned to this category"})
+                    }
+                }  
+
+            })
+            }  
+
+    }) 
+})
 module.exports = router
