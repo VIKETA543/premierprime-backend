@@ -189,7 +189,7 @@ router.post('/poststocksummeries', cors({ origin: '*' }), async (req, res) => {
     console.log(data)
     await pool.connect().then(async (r) => {
         if (r._connected) {
-            BEGIN;
+            r.query('BEGIN'); 
             query = 'SELECT stock_number,product_category FROM store_products WHERE product_number=$1'
             r.query(query, [data.product_number.trim()], (error, results) => {
                 if (error) {
@@ -282,11 +282,11 @@ router.post('/poststocksummeries', cors({ origin: '*' }), async (req, res) => {
                                                                                         } else {
                                                                                             if (results.rowCount > 0) {
                                                                                                 r.release();
-                                                                                                COMMIT
+                                                                                                    r.query('COMMIT'); 
                                                                                                 return res.status(200).json({ success: "Store type successfully created" })
                                                                                             } else {
                                                                                                   r.release();
-                                                                                                  ROLLBACK;
+                                                                                                      r.query('ROLLBACK'); ;
                                                                                                 return res.status(201).json({ message: "Transaction failed." })
                                                                                             }
                                                                                         }
@@ -315,6 +315,7 @@ router.post('/poststocksummeries', cors({ origin: '*' }), async (req, res) => {
                                                                                             return res.status(201).json({ message: error.detail })
                                                                                         } else {
                                                                                             if (results.rowCount > 0) {
+                                                                                                    r.query('COMMIT'); 
                                                                                                 r.release();
                                                                                                 return res.status(200).json({ success: "Store type successfully created" })
                                                                                             } else {
@@ -405,11 +406,11 @@ router.post('/poststocksummeries', cors({ origin: '*' }), async (req, res) => {
                                                                                         } else {
                                                                                             if (results.rowCount > 0) {
                                                                                                 r.release();
-                                                                                                COMMIT
+                                                                                                    r.query('COMMIT'); 
                                                                                                 return res.status(200).json({ success: "Store type successfully created" })
                                                                                             } else {
                                                                                                   r.release();
-                                                                                                  ROLLBACK;
+                                                                                                      r.query('ROLLBACK'); ;
                                                                                                 return res.status(201).json({ message: "Transaction failed." })
                                                                                             }
                                                                                         }
@@ -438,11 +439,11 @@ router.post('/poststocksummeries', cors({ origin: '*' }), async (req, res) => {
                                                                                         } else {
                                                                                             if (results.rowCount > 0) {
                                                                                                 r.release();
-                                                                                                COMMIT
+                                                                                                    r.query('COMMIT'); 
                                                                                                 return res.status(200).json({ success: "Store type successfully created" })
                                                                                             } else {
                                                                                                   r.release();
-                                                                                                  ROLLBACK;
+                                                                                                      r.query('ROLLBACK'); ;
                                                                                                 return res.status(201).json({ message: "Transaction failed." })
                                                                                             }
                                                                                         }
@@ -493,7 +494,7 @@ router.post('/pushProductToStore', cors({ origin: '*' }), async (req, res) => {
     console.log(data)
     await pool.connect().then(async (r) => {
         if (r._connected) {
-        BEGIN;
+        r.query('BEGIN'); 
             query = 'SELECT product_number FROM store_products WHERE product_number=$1'
             r.query(query, [data.productid], (error, results) => {
                 if (error) {
@@ -517,12 +518,12 @@ router.post('/pushProductToStore', cors({ origin: '*' }), async (req, res) => {
                             } else {
 
                                 if (results.rowCount > 0) {
-                                    COMMIT
+                                        r.query('COMMIT'); 
                                     r.release()
                                     return res.status(200).json({ success: 'Request complete' })
 
                                 } else {
-                                  ROLLBACK;
+                              r.query('ROLLBACK'); 
                                     r.release()
                                     return res.status(201).json({ message: "Unable to connection to the Database" })
                                 }
@@ -682,4 +683,47 @@ router.post('/droptType', cors({ origin: '*' }), async (req, res) => {
         }
     })
 })
+
+
+
+// loadStoreRecivedStock
+
+
+
+
+
+router.post('/loadStoreRecivedStock', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = 'SELECT store_received_stock.stock_to_storeid, store_received_stock.stockoperationid, store_received_stock.from_warehouse_id, store_received_stock.store_id, store_received_stock.received_productid, store_received_stock.store_request_id, store_received_stock.quantity_requested, store_received_stock.date_received ,store_received_stock.received_details, store_received_stock.approve_receipt, store_received_stock.warehouse_stock_id, store_received_stock.received_brand, store_received_stock.quantity_received, productbrand.title,productbrand.imageurl, products.name FROM store_received_stock LEFT JOIN productbrand ON store_received_stock.received_brand=productbrand.brandid LEFT JOIN products ON store_received_stock.received_productid=products.serialnumber ORDER BY store_received_stock.date_received ASC LIMIT 500 '
+            r.query(query, (error, results) => {
+                if (error) {
+                    console.log("The error ", error)
+                    r.release();
+                    return res.status(201).json({ message: error.detail })
+                } else {
+                    // console.log(results.rows)
+                    if (results.rows.length > 0) {
+                        return res.status(200).json({ data: results.rows })
+                        r.release();
+
+                    } else {
+                        console.log('Not found')
+                        return res.status(201).json({ message: 'Unable to apply changes to hte selected stores' })
+                    }
+                }
+            })
+
+        } else {
+
+            return res.status(201).json({ message: "Unable to connection to the Database" })
+        }
+    })
+})
+
 module.exports = router

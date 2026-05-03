@@ -7,6 +7,9 @@ const Prices = require('./routes/prices')
 const Suppliers=require('./routes/supplier')
 const Wearhouse=require('./routes/warehouse')
 const Stores=require('./routes/stores')
+const CRM=require('./routes/crm')
+const Pos=require('./routes/pos')
+const Profoma=require('./routes/profoma')
 const app = express();
 const path = require('path');
 
@@ -21,6 +24,8 @@ app.use('/prices', Prices)
 app.use('/supplier', Suppliers)
 app.use('/warehouse',Wearhouse)
 app.use('/stores',Stores)
-
+app.use('/pos',Pos)
+app.use('/crm',CRM)
+app.use('/profoma',Profoma)
 
 module.exports = app;
