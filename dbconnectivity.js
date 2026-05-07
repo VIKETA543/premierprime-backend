@@ -1,6 +1,25 @@
 const { Pool } = require("pg");
 require('dotenv').config();
 
+// const {
+//     PGHOST,PGDATABASE,PGUSER,PGPASSWORD,PGSSLMODE,PGCHANNELBINDING
+// }=process.env
+// const pool = new Pool({
+//   user: PGUSER, // or your custom username
+//   host: PGHOST,
+//   database: PGDATABASE, // A database name you created
+//   password: PGPASSWORD, // The password you set in Step 1
+//    port: 5432,
+//   ssl: {rejectUnauthorized: false,},
+//  channel_binding:PGCHANNELBINDING,
+//     acquireTimeout: 100000,
+//    waitForConnections: true, // Whether to queue requests when no connections are available
+//     connectionLimit: 50000,     // Maximum number of connections in the pool
+//     queueLimit: 0, 
+//     // connectionTimeoutMillis: 10000,
+// });
+
+// LOCAL DB CONFIG
 const {
     PGHOST,PGDATABASE,PGUSER,PGPASSWORD,PGSSLMODE,PGCHANNELBINDING
 }=process.env
@@ -10,13 +29,17 @@ const pool = new Pool({
   database: PGDATABASE, // A database name you created
   password: PGPASSWORD, // The password you set in Step 1
    port: 5432,
-ssl:{required:PGSSLMODE},
  channel_binding:PGCHANNELBINDING,
     acquireTimeout: 100000,
    waitForConnections: true, // Whether to queue requests when no connections are available
     connectionLimit: 50000,     // Maximum number of connections in the pool
     queueLimit: 0, 
+    // connectionTimeoutMillis: 10000,
 });
+
+
+
+
 try{
 
   pool.connect().then((r)=>{
@@ -29,11 +52,11 @@ try{
          r.release()
     }  
  
-  })
+  })   
 }catch(error){
   console.log(error)
 }
 
-
+   
 module.exports = pool
 
