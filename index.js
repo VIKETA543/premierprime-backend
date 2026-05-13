@@ -10,6 +10,8 @@ const Stores=require('./routes/stores')
 const CRM=require('./routes/crm')
 const Pos=require('./routes/pos')
 const Profoma=require('./routes/profoma')
+const Departments=require('./routes/departments')
+const User=require('./routes/user')
 const app = express();
 const path = require('path');
 
@@ -27,5 +29,7 @@ app.use('/stores',Stores)
 app.use('/pos',Pos)
 app.use('/crm',CRM)
 app.use('/profoma',Profoma)
+app.use('/departments',Departments)
+app.use('/user',User)
 
 module.exports = app;
