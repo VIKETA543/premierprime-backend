@@ -28,10 +28,12 @@ router.post('/signup', cors({ origin: '*' }), async (req, res) => {
                     res.status(201).json({ message: error.detail })
                 } else {
                     if (results.rowCount > 0) {
+                        console.log('Signing successful')
                         r.release()
                         return res.status(200).json({ success: 'Custommer successfuly added' })
                     } else {
                         r.release()
+                               console.log('Signing failed')
                         return res.status(200).json({ message: 'Unknown error has occured' })
                     }
                 }
@@ -450,6 +452,7 @@ router.post('/authrole', cors({ origin: '*' }), async (req, res) => {
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
     let data = req.body
+    console.log('The data: ',data)
     await pool.connect().then(async (r) => {
         if (r._connected) {
             query = 'SELECT hook_number,hooked_department,hooked_store,uac_id,login_redirect,access FROM uacp WHERE hook_number=$1 AND access=$2 '
@@ -459,7 +462,7 @@ router.post('/authrole', cors({ origin: '*' }), async (req, res) => {
                     r.release()
                     res.status(201).json({ message: error.detail })
                 } else {
-
+                    console.log(results.rows)
                     if (results.rows.length > 0) {
                         const auth = results.rows[0].access
                         if (auth === true) {
