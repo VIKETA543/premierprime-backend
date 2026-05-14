@@ -403,6 +403,7 @@ router.post('/submitUac', cors({ origin: '*' }), async (req, res) => {
                                 return res.status(201).json({ message: 'Unknown error has occured' })
                             } else {
                                 if (results.rowCount > 0) {
+                                    console.log('INSERTION COMPLETE')
                                     query = 'UPDATE  tb_auth SET   approved=$1, auth=$2  WHERE uac_id=$3';
                                     r.query(query, [true, true, data.user], (error, results) => {
                                         if (error) {
@@ -413,7 +414,7 @@ router.post('/submitUac', cors({ origin: '*' }), async (req, res) => {
                                         } else {
                                             if (results.rowCount > 0) {
                                                 r.query('COMMIT')
-                                                return res.status(201).json({ success: 'Role successfully created. Authorisation success' })
+                                                return res.status(201).json({ success: 'Role successfully created. Authorisation success. Account may not be having password.' })
                                             } else {
                                                 return res.status(201).json({ message: 'Role failed created. Authorisation faled' })
                                             }

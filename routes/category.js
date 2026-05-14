@@ -79,8 +79,9 @@ router.post('/addcart', upload.single('IMAGE'), async (req, res) => {
         await pool.connect().then(async (r) => {
             if (r._connected) {
                 try {
+                    console.log('Saving categories' )
                     query = "INSERT INTO prodcart(serialnumber,category_name,description,image,date_updated,ImageUrl)VALUES($1,$2,$3,$4,$5,$6)"
-                    r.query(query, [data.serialnumber, data.newCategory, data.description, imgData.originalname, data.date, blob.url], (error, results) => {
+                    r.query(query, [data.serialnumber, data.newCategory, data.description, imgData.originalname, new Date(), blob.url], (error, results) => {
                         if (error) {
                             console.log(error)
                             r.release()
