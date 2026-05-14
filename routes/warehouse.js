@@ -1391,7 +1391,7 @@ router.get('/loadstores', cors({ origin: '*' }), async (req, res) => {
     console.log(data)
     await pool.connect().then(async (r) => {
         if (r._connected) {
-            query = "SELECT storenumber,storename,storetype,storelocation,digitaladdress,storedescription,dateposted,isstoreopened FROM stores"
+            query = "SELECT storenumber,storename,storetype,storelacation,digitaladdress,storedescription,dateposted,isstoreopened FROM stores"
             r.query(query, (error, results) => {
                 if (error) {
                     console.log("The error ", error)

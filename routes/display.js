@@ -191,10 +191,12 @@ router.get('/cartegories',cors({ origin: '*' }),async (req,res)=>{
         r.release()
         return res.status(200).json({data:results.rows})
                 }else{
+                     r.release()
                     console.log("NO activity")
                   return res.status(200).json({message:"No Activity"})  
                 }
         }catch(error){
+             r.release()
             console.log(error)
                  return res.status(200).json({message:"Internal error occured"})
                  }

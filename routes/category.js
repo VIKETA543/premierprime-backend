@@ -25,11 +25,13 @@ router.get('/cartlist', cors({ origin: '*' }), async (req, res) => {
                     r.release()
                     return res.status(200).json({ data: results.rows })
                 } else {
-                    console.log("NO activity")
+                        r.release()
+                    console.log("NO FOUND CAT activity")
                     return res.status(200).json({ message: "No Activity" })
                 }
             } catch (error) {
                 console.log(error)
+                    r.release()
                 return res.status(200).json({ message: "Internal error occured" })
             }
         } else {
@@ -283,10 +285,12 @@ router.get('/listbrnd', cors({ origin: '*' }), async (req, res) => {
                     r.release()
                     return res.status(200).json({ data: results.rows })
                 } else {
+                        r.release()
                     console.log("NO activity")
                     return res.status(200).json({ message: "No Activity" })
                 }
             } catch (error) {
+                    r.release()
                 console.log(error)
                 return res.status(200).json({ message: "Internal error occured" })
             }
@@ -311,6 +315,7 @@ router.post('/listbrndbyID', cors({ origin: '*' }), async (req, res) => {
                 query="SELECT brandid,title,role,image,date_created,imageurl FROM productbrand WHERE productid=$1"
             r.query(query,[data.selectedproduct],(error,results)=>{
                 if(error){
+                        r.release()
                     console.log(error)
                 }else{
                                  console.log(results.rows)
@@ -320,7 +325,7 @@ router.post('/listbrndbyID', cors({ origin: '*' }), async (req, res) => {
                                  r.release()
                     return res.status(200).json({ data: results.rows })
                     }else{
-             
+                 r.release()
                     return res.status(200).json({ message: "No Brands have been added to this product" })
                     }
                 }
@@ -328,6 +333,7 @@ router.post('/listbrndbyID', cors({ origin: '*' }), async (req, res) => {
             })
                           } catch (error) {
                 console.log(error)
+                    r.release()
                 return res.status(200).json({ message: "Internal error occured" })
             }
         } else {
@@ -357,6 +363,7 @@ router.get('/brnddata', cors({ origin: '*' }), async (req, res) => {
                     return res.status(200).json({ message: "No Activity" })
                 }
             } catch (error) {
+                    r.release()
                 console.log(error)
                 return res.status(200).json({ message: "Internal error occured" })
             }

@@ -262,28 +262,47 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
 
                 const isMatch = await bcrypt.compare(data.password, foundPassword);
                 if (isMatch) {
-                    console.log('password match', true)
-                    query = 'SELECT approved FROM tb_auth WHERE uac_id=$1';
-                    await client.query(query, [saveUac], (error, results) => {
+
+                    query = 'SELECT hook_number FROM uacp WHERE uac_id=$1'
+                    client.query(query, [saveUac], (error, results) => {
                         if (error) {
-                            return res.status(201).json({ message: '"Invalid password. Your password cannot be found in the database"' })
-                            console.log("Invalid password. Your password cannot be found in the database");
+                            console.log(error);
+                            return res.status(201).json({ message: error.detail })
                         } else {
-          
+
                             if (results.rows.length > 0) {
-                                const approval = results.rows[0].approved
-                                console.log(approval)
-                                if (approval === true) {
-                                    return res.status(201).json({ success: 'Login succesful' })
-                                } else {
-                                    if(approval===false){
-                                    return res.status(201).json({ denied: 'Unable to login. Access denied' })
-                                    }else{
-                                        return res.status(201).json({ wait: 'Waiting for approval from admin!.' }) 
+                                const saved_hook = results.rows[0].hook_number
+                                console.log('the hook', saved_hook)
+                                query = 'SELECT approved FROM tb_auth WHERE uac_id=$1';
+                                client.query(query, [saveUac], (error, results) => {
+                                    if (error) {
+                                        console.log(error);
+                                        return res.status(201).json({ message: '"Invalid password. Your password cannot be found in the database"' })
+                                        console.log(error.detail);
+                                    } else {
+                                        if (results.rows.length > 0) {
+                                            const approval = results.rows[0].approved
+                                            console.log(approval)
+                                            if (approval === true) {
+
+                                                return res.status(201).json({ success: 'Login succesful', hook: saved_hook })
+                                            } else {
+                                                if (approval === false) {
+                                                    return res.status(201).json({ denied: 'Unable to login. Access denied' })
+                                                } else {
+                                                    return res.status(201).json({ wait: 'Waiting for approval from admin!.' })
+                                                }
+                                            }
+                                        } else {
+                                            return res.status(201).json({ wait: 'Waiting for approval from admin!.' })
+                                        }
                                     }
-                                }
+                                })
+
+
                             } else {
-                                return res.status(201).json({ wait: 'Waiting for approval from admin!.' })
+                                console.log('Your role could not be verified. Verify if you are authorise to login')
+                                return res.status(201).json({ message: 'Your role could not be verified. Verify if you are authorise to login' })
                             }
                         }
                     })
@@ -313,6 +332,200 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
         if (client) client.release();
     }
 });
+
+
+
+
+router.get('/userredentials', cors({ origin: '*' }), async (req, res) => {
+
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = 'SELECT  uac_id, fullname,passport_picture_url FROM users'
+            r.query(query, (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release()
+                    res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rows.length > 0) {
+                        r.release()
+                        return res.status(200).json({ data: results.rows })
+                    } else {
+                        r.release()
+                        return res.status(201).json({ message: 'Unknown error has occured' })
+                    }
+                }
+            })
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Failed to connect to the database' })
+        }
+    })
+})
+
+
+
+
+
+router.post('/submitUac', cors({ origin: '*' }), async (req, res) => {
+
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    console.log(data)
+
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            r.query('BEGIN')
+            query = 'SELECT  uac_id,hook_number  FROM uacp WHERE uac_id=$1 OR hook_number=$2'
+            r.query(query, [data.user, data.hrid], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release()
+                    res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rows.length > 0) {
+                        console.log('Exist')
+                        r.release()
+                        return res.status(200).json({ message: 'User has already been assigned to a store' })
+                    } else {
+                        query = 'INSERT INTO uacp(hook_number, hooked_department, hooked_store, login_redirect, description, date_posted, uac_id,access)VALUES($1,$2,$3,$4,$5,$6,$7,$8)'
+                        r.query(query, [data.hrid, data.departement, data.storeMumber, data.login_redirect, data.description, data.postedDate, data.user, data.access], (error, results) => {
+                            if (error) {
+                                r.release()
+                                console.log(error)
+                                r.query('ROLLBACK')
+                                return res.status(201).json({ message: 'Unknown error has occured' })
+                            } else {
+                                if (results.rowCount > 0) {
+                                    query = 'UPDATE  tb_auth SET   approved=$1, auth=$2  WHERE uac_id=$3';
+                                    r.query(query, [true, true, data.user], (error, results) => {
+                                        if (error) {
+                                            console.log(error);
+                                            r.query('ROLLBACK')
+                                            return res.status(201).json({ message: error.detail })
+
+                                        } else {
+                                            if (results.rowCount > 0) {
+                                                r.query('COMMIT')
+                                                return res.status(201).json({ success: 'Role successfully created. Authorisation success' })
+                                            } else {
+                                                return res.status(201).json({ message: 'Role failed created. Authorisation faled' })
+                                            }
+
+                                        }
+                                    })
+                                } else {
+                                    r.query('ROLLBACK')
+                                    r.release()
+                                    return res.status(201).json({ message: 'Unknown error has occured' })
+                                }
+                            }
+                        })
+
+                    }
+                }
+            })
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Failed to connect to the database' })
+        }
+    })
+})
+
+
+
+
+
+
+router.post('/authrole', cors({ origin: '*' }), async (req, res) => {
+
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = 'SELECT hook_number,hooked_department,hooked_store,uac_id,login_redirect,access FROM uacp WHERE hook_number=$1 AND access=$2 '
+            r.query(query, [data.hrid, true], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release()
+                    res.status(201).json({ message: error.detail })
+                } else {
+
+                    if (results.rows.length > 0) {
+                        const auth = results.rows[0].access
+                        if (auth === true) {
+                            console.log('authorisation suucess')
+                            return res.status(200).json({ success: 'Authorisation successful', data: results.rows })
+                        } else {
+                            if (auth === false) {
+                                console.log('auth failed')
+                                return res.status(200).json({ denied: 'Access denied. Your access has been revoked' })
+                            } else {
+                                console.log('waiting')
+                                return res.status(200).json({ wait: 'Your account is waiting to be approved' })
+                            }
+                        }
+                    } else {
+                        r.release()
+                        return res.status(201).json({ message: 'Unknown error has occured' })
+                    }
+                }
+            })
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Failed to connect to the database' })
+        }
+    })
+})
+
+
+// 
+
+router.post('/loadUserInformation', cors({ origin: '*' }), async (req, res) => {
+
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    console.log(data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = 'SELECT users.uac_id,users.fullname,users.prim_phone_number,users.email_address,users.national_id,users.photo_id_url, users.passport_picture_url, users.date_posted, users.gender, users.digital_address, users.surburb, users.id_card_type, users.sec_phone_number, users.date_of_birth, users.age,' +
+                ' stores.storenumber,stores.storename FROM users LEFT JOIN uacp ON users.uac_id=uacp.uac_id LEFT JOIN stores ON  uacp.hooked_store=stores.storenumber WHERE users.uac_id=$1'
+            r.query(query, [data.uac], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release()
+                    res.status(201).json({ message: error.detail })
+                } else {
+
+                    if (results.rows.length > 0) {
+                        console.log(results.rows)
+                        r.release()
+                        return res.status(200).json({ success: 'Authorisation successful', data: results.rows })
+
+                    } else {
+                        r.release()
+                        console.log('User not found')
+                        return res.status(201).json({ message: 'Unknown user account' })
+                    }
+                }
+            })
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Failed to connect to the database' })
+        }
+    })
+})
+
 
 module.exports = router
 
