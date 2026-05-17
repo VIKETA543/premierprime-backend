@@ -73,9 +73,6 @@ router.get('/listallStores', cors({ origin: '*' }), async (req, res) => {
     })
 })
 
-
-
-
 router.get('/liststoretypes', cors({ origin: '*' }), async (req, res) => {
     res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
@@ -327,6 +324,7 @@ router.post('/poststocksummeries', cors({ origin: '*' }), async (req, res) => {
                                                                                     }
                                                                                 })
                                                                             } else {
+                                                                                r.release();
                                                                                 return res.status(201).json({ message: 'Something went wrong. Request could not be completed' })
                                                                             }
                                                                         }
@@ -454,6 +452,7 @@ router.post('/poststocksummeries', cors({ origin: '*' }), async (req, res) => {
                                                                         }
                                                                     })
                                                                 } else {
+                                                                    r.release();
                                                                     return res.status(201).json({ message: 'Something went wrong. Request could not be completed' })
                                                                 }
                                                             }
@@ -472,7 +471,7 @@ router.post('/poststocksummeries', cors({ origin: '*' }), async (req, res) => {
                             }
                         })
                     } else {
-
+                        r.release();
                         return res.status(201).json({ success: "The Selected prodict does not belong to this store" })
                     }
                 }
@@ -540,6 +539,7 @@ router.post('/pushProductToStore', cors({ origin: '*' }), async (req, res) => {
             })
 
         } else {
+            r.release();
             return res.status(201).json({ message: "Unable to connection to the Database" })
         }
     })
@@ -570,12 +570,14 @@ router.post('/listAllProducts', cors({ origin: '*' }), async (req, res) => {
                         r.release();
 
                     } else {
+                        r.release();
                         return res.status(201).json({ message: 'Products are not yet mounted for this sotre' })
                     }
                 }
             })
 
         } else {
+            r.release();
             return res.status(201).json({ message: "Unable to connection to the Database" })
         }
     })
@@ -606,12 +608,14 @@ router.post('/dropStoreproduct', cors({ origin: '*' }), async (req, res) => {
                         r.release();
 
                     } else {
+                        r.release();
                         return res.status(201).json({ message: 'Product could not be deleted' })
                     }
                 }
             })
 
         } else {
+            r.release();
             return res.status(201).json({ message: "Unable to connection to the Database" })
         }
     })
@@ -644,12 +648,14 @@ router.post('/authStoreType', cors({ origin: '*' }), async (req, res) => {
                         r.release();
 
                     } else {
+                        r.release();
                         return res.status(201).json({ message: 'Unable to apply changes to hte selected stores' })
                     }
                 }
             })
 
         } else {
+            r.release();
             return res.status(201).json({ message: "Unable to connection to the Database" })
         }
     })
@@ -678,12 +684,14 @@ router.post('/droptType', cors({ origin: '*' }), async (req, res) => {
                         r.release();
 
                     } else {
+                        r.release();
                         return res.status(201).json({ message: 'Unable to apply changes to hte selected stores' })
                     }
                 }
             })
 
         } else {
+            r.release();
             return res.status(201).json({ message: "Unable to connection to the Database" })
         }
     })
@@ -719,13 +727,14 @@ router.post('/loadStoreRecivedStock', cors({ origin: '*' }), async (req, res) =>
 
                     } else {
                         console.log('Not found')
+                        r.release();
                         return res.status(201).json({ message: 'Unable to apply changes to hte selected stores' })
                     }
                 }
             })
 
         } else {
-
+            r.release();
             return res.status(201).json({ message: "Unable to connection to the Database" })
         }
     })
@@ -776,14 +785,17 @@ router.post('/loadsalseforVerification', cors({ origin: '*' }), async (req, res)
 
                                                 } else {
                                                     if (results.rows.length > 0) {
+                                                        r.release();
                                                         return res.status(200).json({ data: results.rows, invoiceData })
                                                     } else {
+                                                        r.release();
                                                         return res.status(201).json({ message: 'Invalid invoice' })
                                                     }
                                                 }
                                             })
                                         } else {
                                             console.log('univeririfed invoice')
+                                            r.release();
                                             return res.status(201).json({ message: 'Unverified Invoice. Return for verification' })
                                         }
                                     }
@@ -815,14 +827,17 @@ router.post('/loadsalseforVerification', cors({ origin: '*' }), async (req, res)
 
                                             } else {
                                                 if (results.rows.length > 0) {
+                                                    r.release();
                                                     return res.status(200).json({ data: results.rows, invoiceData })
                                                 } else {
+                                                    r.release();
                                                     return res.status(201).json({ message: 'Invalid invoice' })
                                                 }
                                             }
                                         })
                                     } else {
                                         console.log('univeririfed invoice')
+                                        r.release();
                                         return res.status(201).json({ message: 'Unverified Invoice. Return for verification' })
                                     }
                                 }
@@ -839,7 +854,7 @@ router.post('/loadsalseforVerification', cors({ origin: '*' }), async (req, res)
 
 
         } else {
-
+            r.release();
             return res.status(201).json({ message: "Unable to connection to the Database" })
         }
     })
@@ -942,12 +957,14 @@ router.post('/submitProductVerification', cors({ origin: '*' }), async (req, res
                                     })
                                 } else {
                                     console.log('stock update failed')
+                                    r.release();
                                     return res.status(201).json({ message: 'Stock update failed. Try again' })
                                 }
                             }
                         })
                     } else {
                         console.log('stock update failed')
+                        r.release();
                         return res.status(201).json({ message: 'Product not available' })
                     }
                 }
@@ -974,7 +991,7 @@ router.post('/closeInVoice', cors({ origin: '*' }), async (req, res) => {
                 } else {
                     if (results.rows.length > 0) {
                         query = 'UPDATE tb_lock_invoices SET is_locked=$1,is_product_issued=$2 WHERE invoice_number=$3 AND store_number=$4 '
-                        r.query(query, [true, true,data.invoiceNumber, data.storeNumber], (error, results) => {
+                        r.query(query, [true, true, data.invoiceNumber, data.storeNumber], (error, results) => {
                             if (error) {
                                 console.log("The error ", error)
                                 r.release();
@@ -986,23 +1003,25 @@ router.post('/closeInVoice', cors({ origin: '*' }), async (req, res) => {
                                     r.release();
                                 } else {
                                     console.log('Not found')
+                                    r.release();
                                     return res.status(201).json({ message: 'Request failed. Try again' })
                                 }
                             }
                         })
                     } else {
-                        query='INSERT INTO tb_lock_invoices(invoice_number,store_number,is_locked,date_locked,is_product_issued)VALUES($1,$2,$3,$4,$5)'
-                        r.query(query,[data.invoiceNumber,data.storeNumber,true,new Date(),true],(error, results)=>{
-                            if(error){
-                                     console.log("The error ", error)
+                        query = 'INSERT INTO tb_lock_invoices(invoice_number,store_number,is_locked,date_locked,is_product_issued)VALUES($1,$2,$3,$4,$5)'
+                        r.query(query, [data.invoiceNumber, data.storeNumber, true, new Date(), true], (error, results) => {
+                            if (error) {
+                                console.log("The error ", error)
                                 r.release();
                                 return res.status(201).json({ message: error.detail })
-                            }else{
-                                 if (results.rowCount > 0) {
+                            } else {
+                                if (results.rowCount > 0) {
                                     return res.status(200).json({ success: 'Invoice successfully closed' })
                                     r.release();
                                 } else {
                                     console.log('Not found')
+                                    r.release();
                                     return res.status(201).json({ message: 'Request failed. Try again' })
                                 }
                             }
@@ -1012,7 +1031,7 @@ router.post('/closeInVoice', cors({ origin: '*' }), async (req, res) => {
                 }
             })
         } else {
-
+            r.release();
             return res.status(201).json({ message: "Unable to connection to the Database" })
         }
     })
@@ -1045,10 +1064,10 @@ router.post('/load_for_credit_verification', cors({ origin: '*' }), async (req, 
                     r.release()
                     return res.status(201).json({ message: error.details })
                 } else {
-                       console.log('checnking log invoice')
+                    console.log('checnking log invoice')
 
                     if (results.rows.length > 0) {
-                     
+
                         if (results.rows[0].is_locked) {
                             return res.status(201).json({ message: 'Items on this invoice are already supplied. No further verification required' })
                         } else {
@@ -1072,19 +1091,21 @@ router.post('/load_for_credit_verification', cors({ origin: '*' }), async (req, 
                                                     console.log(error)
                                                     r.release()
                                                     return res.status(201).json({ message: error.details })
-
                                                 } else {
                                                     if (results.rows.length > 0) {
                                                         console.log(results.rows)
+                                                        r.release();
                                                         return res.status(200).json({ data: results.rows, invoiceData })
                                                     } else {
                                                         console.log('not found')
+                                                        r.release();
                                                         return res.status(201).json({ message: 'Invalid invoice' })
                                                     }
                                                 }
                                             })
                                         } else {
                                             console.log('univeririfed invoice')
+                                            r.release();
                                             return res.status(201).json({ message: 'Unverified Invoice. Return for verification' })
                                         }
                                     }
@@ -1093,8 +1114,8 @@ router.post('/load_for_credit_verification', cors({ origin: '*' }), async (req, 
                         }
                     } else {
 
-                         query = 'SELECT tb_credit_invoice_summary.invoice_number,tb_credit_invoice_summary.dateposted,tb_credit_invoice_summary.isinvoice_verified,tb_credit_invoice_summary.is_payment_complete,tb_credit_invoice_summary.sales_type, tb_credit_invoice_summary.payment_progress, tb_cashsale_invoices.customername, tb_cashsale_invoices.telephone, tb_cashsale_invoices.emailadress, tb_cashsale_invoices.address' +
-                                '  FROM tb_credit_invoice_summary LEFT JOIN tb_cashsale_invoices ON  tb_credit_invoice_summary.invoice_number =tb_cashsale_invoices.invoice_number  WHERE tb_credit_invoice_summary.invoice_number=$1  '
+                        query = 'SELECT tb_credit_invoice_summary.invoice_number,tb_credit_invoice_summary.dateposted,tb_credit_invoice_summary.isinvoice_verified,tb_credit_invoice_summary.is_payment_complete,tb_credit_invoice_summary.sales_type, tb_credit_invoice_summary.payment_progress, tb_cashsale_invoices.customername, tb_cashsale_invoices.telephone, tb_cashsale_invoices.emailadress, tb_cashsale_invoices.address' +
+                            '  FROM tb_credit_invoice_summary LEFT JOIN tb_cashsale_invoices ON  tb_credit_invoice_summary.invoice_number =tb_cashsale_invoices.invoice_number  WHERE tb_credit_invoice_summary.invoice_number=$1  '
                         r.query(query, [data.invoiceNumber], (error, results) => {
                             if (error) {
                                 console.log(error)
@@ -1106,8 +1127,8 @@ router.post('/load_for_credit_verification', cors({ origin: '*' }), async (req, 
                                     if (auth) {
                                         let invoiceData = results.rows
                                         query = 'SELECT tb_credit_sales.invoice_number,tb_credit_sales.product_number,tb_credit_sales.purchaseid,tb_credit_sales.product_brand,tb_credit_sales.quantity_sold,tb_credit_sales.unit_price,tb_credit_sales.total_price,' +
-                                                ' tb_credit_sales.dateposted,tb_credit_sales.isinvoice_verified,tb_credit_sales.invoice_submitted,tb_credit_sales.store_number,tb_credit_sales.store_verified, products.name,productbrand.title ' +
-                                                ' FROM tb_credit_sales LEFT JOIN products ON  tb_credit_sales.product_number=products.serialnumber LEFT JOIN productbrand ON tb_credit_sales.product_brand=productbrand.brandid WHERE tb_credit_sales.invoice_number=$1 AND  tb_credit_sales.store_number=$2  '
+                                            ' tb_credit_sales.dateposted,tb_credit_sales.isinvoice_verified,tb_credit_sales.invoice_submitted,tb_credit_sales.store_number,tb_credit_sales.store_verified, products.name,productbrand.title ' +
+                                            ' FROM tb_credit_sales LEFT JOIN products ON  tb_credit_sales.product_number=products.serialnumber LEFT JOIN productbrand ON tb_credit_sales.product_brand=productbrand.brandid WHERE tb_credit_sales.invoice_number=$1 AND  tb_credit_sales.store_number=$2  '
                                         r.query(query, [data.invoiceNumber, data.storeNumber], (error, results) => {
                                             if (error) {
                                                 console.log(error)
@@ -1117,15 +1138,18 @@ router.post('/load_for_credit_verification', cors({ origin: '*' }), async (req, 
                                             } else {
                                                 if (results.rows.length > 0) {
                                                     console.log(error)
+                                                    r.release();
                                                     return res.status(200).json({ data: results.rows, invoiceData })
                                                 } else {
                                                     console.log('invalid')
+                                                    r.release();
                                                     return res.status(201).json({ message: 'Invalid invoice' })
                                                 }
                                             }
                                         })
                                     } else {
                                         console.log('univeririfed invoice')
+                                        r.release();
                                         return res.status(201).json({ message: 'Unverified Invoice. Return for verification' })
                                     }
                                 }
@@ -1143,6 +1167,7 @@ router.post('/load_for_credit_verification', cors({ origin: '*' }), async (req, 
 
         } else {
             console.log('Database connection failed')
+            r.release();
             return res.status(201).json({ message: "Unable to connection to the Database" })
         }
     })
@@ -1245,12 +1270,14 @@ router.post('/submit_credit_for_verification', cors({ origin: '*' }), async (req
                                     })
                                 } else {
                                     console.log('stock update failed')
+                                    r.release();
                                     return res.status(201).json({ message: 'Stock update failed. Try again' })
                                 }
                             }
                         })
                     } else {
                         console.log('stock update failed')
+                        r.release();
                         return res.status(201).json({ message: 'Product not available' })
                     }
                 }
@@ -1277,7 +1304,7 @@ router.post('/closeCreditInVoice', cors({ origin: '*' }), async (req, res) => {
                 } else {
                     if (results.rows.length > 0) {
                         query = 'UPDATE tb_lock_invoices SET is_locked=$1,is_product_issued=$2 WHERE invoice_number=$3 AND store_number=$4 '
-                        r.query(query, [true, true,data.invoiceNumber, data.storeNumber], (error, results) => {
+                        r.query(query, [true, true, data.invoiceNumber, data.storeNumber], (error, results) => {
                             if (error) {
                                 console.log("The error ", error)
                                 r.release();
@@ -1289,23 +1316,26 @@ router.post('/closeCreditInVoice', cors({ origin: '*' }), async (req, res) => {
                                     r.release();
                                 } else {
                                     console.log('Not found')
+                                    r.release();
                                     return res.status(201).json({ message: 'Request failed. Try again' })
                                 }
                             }
                         })
                     } else {
-                        query='INSERT INTO tb_lock_invoices(invoice_number,store_number,is_locked,date_locked,is_product_issued)VALUES($1,$2,$3,$4,$5)'
-                        r.query(query,[data.invoiceNumber,data.storeNumber,true,new Date(),true],(error, results)=>{
-                            if(error){
-                                     console.log("The error ", error)
+                        query = 'INSERT INTO tb_lock_invoices(invoice_number,store_number,is_locked,date_locked,is_product_issued)VALUES($1,$2,$3,$4,$5)'
+                        r.query(query, [data.invoiceNumber, data.storeNumber, true, new Date(), true], (error, results) => {
+                            if (error) {
+                                console.log("The error ", error)
                                 r.release();
                                 return res.status(201).json({ message: error.detail })
-                            }else{
-                                 if (results.rowCount > 0) {
-                                    return res.status(200).json({ success: 'Invoice successfully closed' })
+                            } else {
+                                if (results.rowCount > 0) {
                                     r.release();
+                                    return res.status(200).json({ success: 'Invoice successfully closed' })
+
                                 } else {
                                     console.log('Not found')
+                                    r.release();
                                     return res.status(201).json({ message: 'Request failed. Try again' })
                                 }
                             }
@@ -1315,11 +1345,696 @@ router.post('/closeCreditInVoice', cors({ origin: '*' }), async (req, res) => {
                 }
             })
         } else {
+            r.release();
+            return res.status(201).json({ message: "Unable to connection to the Database" })
+        }
+    })
+})
+// load_store_request
+
+
+
+
+
+
+router.post('/load_for_credit_verification', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    console.log('Checking invoice..... settings', data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            console.log('checking connection')
+            query = 'SELECT * FROM tb_lock_invoices WHERE invoice_number=$1 AND store_number=$2'
+            r.query(query, [data.invoiceNumber, data.storeNumber], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release()
+                    return res.status(201).json({ message: error.details })
+                } else {
+                    console.log('checnking log invoice')
+
+                    if (results.rows.length > 0) {
+
+                        if (results.rows[0].is_locked) {
+                            return res.status(201).json({ message: 'Items on this invoice are already supplied. No further verification required' })
+                        } else {
+                            query = 'SELECT tb_credit_invoice_summary.invoice_number,tb_credit_invoice_summary.dateposted,tb_credit_invoice_summary.isinvoice_verified,tb_credit_invoice_summary.is_payment_complete,tb_credit_invoice_summary.sales_type, tb_credit_invoice_summary.payment_progress, tb_cashsale_invoices.customername, tb_cashsale_invoices.telephone, tb_cashsale_invoices.emailadress, tb_cashsale_invoices.address' +
+                                '  FROM tb_credit_invoice_summary LEFT JOIN tb_cashsale_invoices ON  tb_credit_invoice_summary.invoice_number =tb_cashsale_invoices.invoice_number  WHERE tb_credit_invoice_summary.invoice_number=$1  '
+                            r.query(query, [data.invoiceNumber], (error, results) => {
+                                if (error) {
+                                    console.log(error)
+                                    r.release()
+                                    return res.status(201).json({ message: error.details })
+                                } else {
+                                    if (results.rows.length > 0) {
+                                        let auth = results.rows[0].isinvoice_verified
+                                        if (auth) {
+                                            let invoiceData = results.rows
+                                            query = 'SELECT tb_credit_sales.invoice_number,tb_credit_sales.product_number,tb_credit_sales.purchaseid,tb_credit_sales.product_brand,tb_credit_sales.quantity_sold,tb_credit_sales.unit_price,tb_credit_sales.total_price,' +
+                                                ' tb_credit_sales.dateposted,tb_credit_sales.isinvoice_verified,tb_credit_sales.invoice_submitted,tb_credit_sales.store_number,tb_credit_sales.store_verified, products.name,productbrand.title ' +
+                                                ' FROM tb_credit_sales LEFT JOIN products ON  tb_credit_sales.product_number=products.serialnumber LEFT JOIN productbrand ON tb_credit_sales.product_brand=productbrand.brandid WHERE tb_credit_sales.invoice_number=$1 AND  tb_credit_sales.store_number=$2  '
+                                            r.query(query, [data.invoiceNumber, data.storeNumber], (error, results) => {
+                                                if (error) {
+                                                    console.log(error)
+                                                    r.release()
+                                                    return res.status(201).json({ message: error.details })
+
+                                                } else {
+                                                    if (results.rows.length > 0) {
+                                                        console.log(results.rows)
+                                                        r.release();
+                                                        return res.status(200).json({ data: results.rows, invoiceData })
+                                                    } else {
+                                                        r.release();
+                                                        console.log('not found')
+                                                        return res.status(201).json({ message: 'Invalid invoice' })
+                                                    }
+                                                }
+                                            })
+                                        } else {
+                                            r.release();
+                                            console.log('univeririfed invoice')
+                                            return res.status(201).json({ message: 'Unverified Invoice. Return for verification' })
+                                        }
+                                    }
+                                }
+                            })
+                        }
+                    } else {
+
+                        query = 'SELECT tb_credit_invoice_summary.invoice_number,tb_credit_invoice_summary.dateposted,tb_credit_invoice_summary.isinvoice_verified,tb_credit_invoice_summary.is_payment_complete,tb_credit_invoice_summary.sales_type, tb_credit_invoice_summary.payment_progress, tb_cashsale_invoices.customername, tb_cashsale_invoices.telephone, tb_cashsale_invoices.emailadress, tb_cashsale_invoices.address' +
+                            '  FROM tb_credit_invoice_summary LEFT JOIN tb_cashsale_invoices ON  tb_credit_invoice_summary.invoice_number =tb_cashsale_invoices.invoice_number  WHERE tb_credit_invoice_summary.invoice_number=$1  '
+                        r.query(query, [data.invoiceNumber], (error, results) => {
+                            if (error) {
+                                console.log(error)
+                                r.release()
+                                return res.status(201).json({ message: error.details })
+                            } else {
+                                if (results.rows.length > 0) {
+                                    let auth = results.rows[0].isinvoice_verified
+                                    if (auth) {
+                                        let invoiceData = results.rows
+                                        query = 'SELECT tb_credit_sales.invoice_number,tb_credit_sales.product_number,tb_credit_sales.purchaseid,tb_credit_sales.product_brand,tb_credit_sales.quantity_sold,tb_credit_sales.unit_price,tb_credit_sales.total_price,' +
+                                            ' tb_credit_sales.dateposted,tb_credit_sales.isinvoice_verified,tb_credit_sales.invoice_submitted,tb_credit_sales.store_number,tb_credit_sales.store_verified, products.name,productbrand.title ' +
+                                            ' FROM tb_credit_sales LEFT JOIN products ON  tb_credit_sales.product_number=products.serialnumber LEFT JOIN productbrand ON tb_credit_sales.product_brand=productbrand.brandid WHERE tb_credit_sales.invoice_number=$1 AND  tb_credit_sales.store_number=$2  '
+                                        r.query(query, [data.invoiceNumber, data.storeNumber], (error, results) => {
+                                            if (error) {
+                                                console.log(error)
+                                                r.release()
+                                                return res.status(201).json({ message: error.details })
+
+                                            } else {
+                                                if (results.rows.length > 0) {
+                                                    console.log(error)
+                                                    r.release();
+                                                    return res.status(200).json({ data: results.rows, invoiceData })
+                                                } else {
+                                                    r.release();
+                                                    console.log('invalid')
+                                                    return res.status(201).json({ message: 'Invalid invoice' })
+                                                }
+                                            }
+                                        })
+                                    } else {
+                                        r.release();
+                                        console.log('univeririfed invoice')
+                                        return res.status(201).json({ message: 'Unverified Invoice. Return for verification' })
+                                    }
+                                }
+                            }
+                        })
+
+
+
+
+                    }
+                }
+            })
+
+
+
+        } else {
+            r.release();
+            console.log('Database connection failed')
+            return res.status(201).json({ message: "Unable to connection to the Database" })
+        }
+    })
+})
+
+
+router.post('/submitReques', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    console.log('data,', data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+
+            query = 'SELECT * FROM  stock_request_control WHERE  request_number=$1 '
+            r.query(query, [data.request_number], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release();
+                    return res.status(201).json({ message: error.detail })
+                } else {
+                    const ifRows = results.rows.length
+                    console.log('ifRows: ', results.rows.length)
+                    if (results.rows.length > 0) {
+
+                        const check = results.rows[0].request_approved
+                        if (check === true) {
+                            r.release();
+                            return res.status(200).json({ message: 'Request is closed' })
+
+                        } else {
+                            if (check === false) {
+
+                                query = 'INSERT INTO store_stock_request(product_number,brand_number,cartegory,request_number,quantity,store_number,date_resquested,is_submitted,request_approved,date_approved,description,itemrowid)VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)'
+                                r.query(query, [data.productNumber, data.productBrand, data.category, data.requestNumber, data.quantity, data.storeNumber, data.reuqestDat, false, false, null, data.description, data.itemrowid], (error, results) => {
+                                    if (error) {
+                                        console.log(error)
+                                        r.release();
+                                        return res.status(201).json({ message: error.detail })
+                                    } else {
+                                        if (results.rowCount > 0) {
+                                            r.release();
+                                            return res.status(200).json({ success: 'Item added successfully' })
+                                        } else {
+                                            r.release();
+                                            return res.status(200).json({ message: 'Request failed' })
+                                        }
+                                    }
+                                })
+
+
+                            } else {
+                                r.release();
+                                return res.status(200).json({ message: 'Request status cannot be identified' })
+                            }
+                        }
+
+                    } else {
+                        if (data.isMultiple === true) {
+
+                            if (ifRows > 0) {
+
+                                query = 'INSERT INTO store_stock_request(product_number,brand_number,cartegory,request_number,quantity,store_number,date_resquested,is_submitted,request_approved,date_approved,description,itemrowid)VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)'
+                                r.query(query, [data.productNumber, data.productBrand, data.category, data.requestNumber, data.quantity, data.storeNumber, data.reuqestDat, false, false, null, data.description, data.itemrowid], (error, results) => {
+                                    if (error) {
+                                        console.log(error)
+                                        r.release();
+                                        return res.status(201).json({ message: error.detail })
+                                    } else {
+                                        if (results.rowCount > 0) {
+                                            console.log('success')
+                                            r.release();
+                                            return res.status(200).json({ success: 'Item added successfully' })
+                                        } else {
+                                            r.release();
+                                            console.log('success')
+                                            return res.status(200).json({ message: 'Request failed' })
+                                        }
+                                    }
+                                })
+
+                            } else {
+                                console.log('firs insertion')
+                                query = 'INSERT INTO stock_request_control(request_number,date_resquested,is_submitted,store_number)VALUES($1,$2,$3,$4) '
+                                r.query(query, [data.requestNumber, data.reuqestDat, false, data.storeNumber], (error, results) => {
+                                    if (error) {
+                                        console.log(error)
+                                        r.release();
+                                    } else {
+                                        if (results.rowCount > 0) {
+                                            query = 'INSERT INTO store_stock_request(product_number,brand_number,cartegory,request_number,quantity,store_number,date_resquested,is_submitted,request_approved,date_approved,description,itemrowid)VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)'
+                                            r.query(query, [data.productNumber, data.productBrand, data.category, data.requestNumber, data.quantity, data.storeNumber, data.reuqestDat, false, false, null, data.description, data.itemrowid], (error, results) => {
+                                                if (error) {
+                                                    console.log(error)
+                                                    r.release();
+                                                    return res.status(201).json({ message: error.detail })
+                                                } else {
+                                                    if (results.rowCount > 0) {
+                                                        console.log('success')
+                                                        r.release();
+                                                        return res.status(200).json({ success: 'Item added successfully' })
+                                                    } else {
+                                                        r.release();
+                                                        console.log('success')
+                                                        return res.status(200).json({ message: 'Request failed' })
+                                                    }
+                                                }
+                                            })
+
+                                        } else {
+                                            r.release();
+                                            return res.status(201).json({ message: 'Request failed.' })
+                                        }
+                                    }
+                                })
+
+                            }
+
+                        } else {
+
+                            query = 'INSERT INTO stock_request_control(request_number,date_resquested,is_submitted,store_number)VALUES($1,$2,$3,$4) '
+                            r.query(query, [data.requestNumber, data.reuqestDat, false, data.storeNumber], (error, results) => {
+                                if (error) {
+                                    console.log(error)
+                                    r.release();
+                                } else {
+                                    if (results.rowCount > 0) {
+                                        query = 'INSERT INTO store_stock_request(product_number,brand_number,cartegory,request_number,quantity,store_number,date_resquested,is_submitted,request_approved,date_approved,description,itemrowid)VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)'
+                                        r.query(query, [data.productNumber, data.productBrand, data.category, data.requestNumber, data.quantity, data.storeNumber, data.reuqestDat, false, false, null, data.description, data.itemrowid], (error, results) => {
+                                            if (error) {
+                                                console.log(error)
+                                                r.release();
+                                                return res.status(201).json({ message: error.detail })
+                                            } else {
+                                                if (results.rowCount > 0) {
+                                                    console.log('success')
+                                                    r.release();
+                                                    return res.status(200).json({ success: 'Item added successfully' })
+                                                } else {
+                                                    r.release();
+                                                    console.log(failed)
+                                                    return res.status(200).json({ message: 'Request failed' })
+                                                }
+                                            }
+                                        })
+
+                                    } else {
+                                        r.release();
+                                        return res.status(201).json({ message: 'Request failed.' })
+                                    }
+                                }
+                            })
+
+
+                        }
+                    }
+                }
+            })
+
+        } else {
+            r.release();
+            console.log('Unable to connection to the Database')
+            return res.status(201).json({ message: "Unable to connection to the Database" })
+        }
+    })
+})
+
+
+
+router.post('/load_store_request', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = 'SELECT store_stocK_request.product_number, store_stocK_request.brand_number, store_stocK_request.cartegory, store_stocK_request.request_number, store_stocK_request.quantity, store_stocK_request.store_number, store_stocK_request.date_resquested, ' +
+                'store_stocK_request.is_submitted, store_stocK_request.request_approved, store_stocK_request.date_approved, store_stocK_request.description, store_stocK_request.itemrowid,' +
+                'products.name, productbrand.title FROM store_stocK_request LEFT JOIN products ON store_stocK_request.product_number=products.serialnumber LEFT JOIN productbrand ON store_stocK_request.brand_number=productbrand.brandid WHERE store_stocK_request.request_number=$1 AND store_stocK_request.is_submitted=$2'
+            r.query(query, [data.request_number, false], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release();
+                    return res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rows.length > 0) {
+                        return res.status(200).json({ data: results.rows })
+                        r.release();
+                    } else {
+                        console.log('Not found')
+                        r.release();
+                        return res.status(201).json({ message: 'No request place for your store' })
+                    }
+                }
+            })
+
+        } else {
+            r.release();
+            return res.status(201).json({ message: "Unable to connection to the Database" })
+        }
+    })
+})
+
+
+router.post('/find_store_request', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = 'SELECT store_stocK_request.product_number, store_stocK_request.brand_number, store_stocK_request.cartegory, store_stocK_request.request_number, store_stocK_request.quantity, store_stocK_request.store_number, store_stocK_request.date_resquested, ' +
+                'store_stocK_request.is_submitted, store_stocK_request.request_approved, store_stocK_request.date_approved, store_stocK_request.description,store_stocK_request.itemrowid,' +
+                'products.name, productbrand.title FROM store_stocK_request LEFT JOIN products ON store_stocK_request.product_number=products.serialnumber LEFT JOIN productbrand ON store_stocK_request.brand_number=productbrand.brandid WHERE store_stocK_request.request_number=$1'
+            r.query(query, [data.request_number], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release();
+                    return res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rows.length > 0) {
+                        r.release();
+                        return res.status(200).json({ data: results.rows })
+
+                    } else {
+                        console.log('Not found')
+                        r.release();
+                        return res.status(201).json({ message: 'No request place for your store' })
+                    }
+                }
+            })
+
+        } else {
 
             return res.status(201).json({ message: "Unable to connection to the Database" })
         }
     })
 })
 
+
+
+
+
+
+
+
+router.post('/dropRequest', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    console.log(data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = 'SELECT * FROM stock_request_control  WHERE request_number=$1'
+            r.query(query, [data.request_number], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release();
+                    return res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rows.length > 0) {
+                        query = 'DELETE FROM stock_request_control  WHERE request_number=$1'
+                        r.query(query, [data.request_number], (error, results) => {
+                            if (error) {
+                                console.log(error)
+                                r.release();
+                                return res.status(201).json({ message: error.detail })
+                            } else {
+                                if (results.rowCount > 0) {
+
+                                    query = 'DELETE FROM store_stocK_request  WHERE request_number=$1'
+                                    r.query(query, [data.request_number], (error, results) => {
+                                        if (error) {
+                                            console.log(error)
+                                            r.release();
+                                            return res.status(201).json({ message: error.detail })
+                                        } else {
+                                            if (results.rowCount > 0) {
+                                                console.log('success')
+                                                return res.status(201).json({ success: 'Request was successful' })
+                                            } else {
+                                                r.release();
+                                                console.log('Not failed')
+                                                return res.status(201).json({ message: 'Request failed' })
+                                            }
+                                        }
+                                    })
+
+                                } else {
+                                    r.release();
+                                    console.log('Not failed')
+                                    return res.status(201).json({ message: 'Request failed' })
+                                }
+                            }
+                        })
+                    } else {
+                        r.release();
+                        console.log('Not found')
+                        return res.status(201).json({ message: 'No request place for your store' })
+                    }
+                }
+            })
+
+        } else {
+            r.release();
+
+            return res.status(201).json({ message: "Unable to connection to the Database" })
+        }
+    })
+})
+
+
+// 
+
+
+router.post('/findPending', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    console.log(data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = 'SELECT store_stocK_request.product_number, store_stocK_request.brand_number, store_stocK_request.cartegory, store_stocK_request.request_number, store_stocK_request.quantity, store_stocK_request.store_number, store_stocK_request.date_resquested, ' +
+                'store_stocK_request.is_submitted, store_stocK_request.request_approved, store_stocK_request.date_approved, store_stocK_request.description,store_stocK_request.itemrowid,' +
+                'products.name, productbrand.title FROM store_stocK_request LEFT JOIN products ON store_stocK_request.product_number=products.serialnumber LEFT JOIN productbrand ON store_stocK_request.brand_number=productbrand.brandid WHERE store_stocK_request.store_number=$1 AND store_stocK_request.request_approved=$2'
+            r.query(query, [data.storeNumber, false], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release();
+                    return res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rows.length > 0) {
+                        const pending = results.rows
+                        query = 'SELECT request_number FROM stock_request_control WHERE request_approved=$1 AND store_number=$2'
+                        r.query(query, [false, data.storeNumber], (error, results) => {
+                            if (error) {
+                                console.log(error)
+                                r.release();
+                                return res.status(201).json({ message: error.detail })
+                            } else {
+                                if (results.rows.length > 0) {
+                                    console.log( results.rows)
+                                r.release();
+                                    return res.status(200).json({ data: pending, requests: results.rows })
+                                } else {
+                                     r.release();
+                                     console.log('no results found')
+                                }
+                            }
+                        })
+                    } else {
+                        r.release();
+                        console.log('Not found')
+                        return res.status(201).json({ message: 'No request place for your store' })
+                    }
+                }
+            })
+
+        } else {
+
+            return res.status(201).json({ message: "Unable to connection to the Database" })
+        }
+    })
+})
+
+
+
+
+
+
+router.post('/dropRequest_Item', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    console.log(data)
+    await pool.connect().then(async (r) => {
+
+        query = 'DELETE FROM store_stocK_request  WHERE itemrowid=$1'
+        r.query(query, [data.itemrowid], (error, results) => {
+            if (error) {
+                console.log(error)
+                r.release();
+                return res.status(201).json({ message: error.detail })
+            } else {
+                if (results.rowCount > 0) {
+                    r.release();
+                    console.log('success')
+                    return res.status(201).json({ success: 'Request was successful' })
+                } else {
+                    r.release();
+                    console.log('Not failed')
+                    return res.status(201).json({ message: 'Request failed' })
+                }
+            }
+        })
+    })
+})
+
+
+// load_store_request_history
+
+
+router.post('/load_store_request_history', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = 'SELECT store_stocK_request.product_number, store_stocK_request.brand_number, store_stocK_request.cartegory, store_stocK_request.request_number, store_stocK_request.quantity, store_stocK_request.store_number, store_stocK_request.date_resquested, ' +
+                'store_stocK_request.is_submitted, store_stocK_request.request_approved, store_stocK_request.date_approved, store_stocK_request.description,store_stocK_request.itemrowid,' +
+                'products.name, productbrand.title FROM store_stocK_request LEFT JOIN products ON store_stocK_request.product_number=products.serialnumber LEFT JOIN productbrand ON store_stocK_request.brand_number=productbrand.brandid WHERE store_stocK_request.store_number=$1'
+            r.query(query, [data.storeNumber], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release();
+                    return res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rows.length > 0) {
+                        r.release();
+                        return res.status(200).json({ data: results.rows })
+
+                    } else {
+                        r.release();
+                        console.log('Not found')
+                        return res.status(201).json({ message: 'No request place for your store' })
+                    }
+                }
+            })
+
+        } else {
+            r.release();
+            return res.status(201).json({ message: "Unable to connection to the Database" })
+        }
+    })
+})
+
+
+// submitRequest
+
+
+router.post('/submitRequest', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            r.query('BEGIN')
+            console.log(data)
+            query = 'SELECT * FROM stock_request_control  WHERE request_number=$1'
+            r.query(query, [data.request_number], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release();
+                    return res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rows.length > 0) {
+                        console.log('submitting request')
+                        query = 'UPDATE  stock_request_control SET is_submitted=$1, date_resquested=$2 WHERE request_number=$3 '
+                        r.query(query, [data.submitted, data.date_submitted, data.request_number], (error, results) => {
+                            if (error) {
+                                console.log(error)
+                                r.query('ROLLBACK')
+                                r.release();
+                                return res.status(201).json({ message: error.detail })
+                            } else {
+                                if (results.rowCount > 0) {
+                                    query = 'UPDATE  store_stock_request  SET is_submitted=$1, date_resquested=$2 WHERE request_number=$3 '
+                                    r.query(query, [data.submitted, data.date_submitted, data.request_number], (error, results) => {
+                                        if (error) {
+                                            console.log(error)
+                                            r.query('ROLLBACK')
+                                            r.release();
+                                            return res.status(201).json({ message: error.detail })
+                                        } else {
+                                            if (results.rowCount > 0) {
+                                                r.query('COMMIT')
+                                                res.status(200).json({ success: 'Request successfully summited' })
+                                            } else {
+                                                r.release();
+                                                console.log('failed')
+                                                r.query('ROLLBACK')
+                                                return res.status(201).json({ message: 'Submission failed' })
+                                            }
+                                        }
+                                    })
+                                } else {
+                                    r.release();
+                                    console.log('failed')
+                                    r.query('ROLLBACK')
+                                    return res.status(201).json({ message: 'Submission failed' })
+                                }
+                            }
+                        })
+
+                    } else {
+                        r.release();
+                        r.query('ROLLBACK')
+                        console.log('request not found')
+                        return res.status(201).json({ message: 'Request is not available' })
+                    }
+                }
+            })
+
+        } else {
+            r.release();
+            return res.status(201).json({ message: "Unable to connection to the Database" })
+        }
+    })
+})
+
+
+
+
+
+
+router.post('/findPendingItem', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    console.log('finding',data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = 'SELECT store_stocK_request.product_number, store_stocK_request.brand_number, store_stocK_request.cartegory, store_stocK_request.request_number, store_stocK_request.quantity, store_stocK_request.store_number, store_stocK_request.date_resquested, ' +
+                'store_stocK_request.is_submitted, store_stocK_request.request_approved, store_stocK_request.date_approved, store_stocK_request.description,store_stocK_request.itemrowid,' +
+                'products.name, productbrand.title FROM store_stocK_request LEFT JOIN products ON store_stocK_request.product_number=products.serialnumber LEFT JOIN productbrand ON'+
+                ' store_stocK_request.brand_number=productbrand.brandid WHERE store_stocK_request.store_number=$1 AND store_stocK_request.request_number=$2'
+            r.query(query, [data.store_number,data.request_number ], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release();
+                    return res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rows.length > 0) {
+                        r.release();
+                        return res.status(200).json({ data: results.rows })
+
+                    } else {
+                        r.release();
+                        console.log('Not found')
+                        return res.status(201).json({ message: 'No request place for your store' })
+                    }
+                }
+            })
+
+        } else {
+            r.release();
+            return res.status(201).json({ message: "Unable to connection to the Database" })
+        }
+    })
+})
 
 module.exports = router

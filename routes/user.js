@@ -275,7 +275,7 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
                             if (results.rows.length > 0) {
                                 const saved_hook = results.rows[0].hook_number
                                 console.log('the hook', saved_hook)
-                                query = 'SELECT approved FROM tb_auth WHERE uac_id=$1';
+                                query = 'SELECT approved, uac_id FROM tb_auth WHERE uac_id=$1';
                                 client.query(query, [saveUac], (error, results) => {
                                     if (error) {
                                         console.log(error);
@@ -284,10 +284,10 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
                                     } else {
                                         if (results.rows.length > 0) {
                                             const approval = results.rows[0].approved
-                                            console.log(approval)
+                                            const id=results.rows[0].uac_id
                                             if (approval === true) {
 
-                                                return res.status(201).json({ success: 'Login succesful', hook: saved_hook })
+                                                return res.status(201).json({ success: 'Login succesful', hook: saved_hook,uac_id:id })
                                             } else {
                                                 if (approval === false) {
                                                     return res.status(201).json({ denied: 'Unable to login. Access denied' })
@@ -499,12 +499,12 @@ router.post('/loadUserInformation', cors({ origin: '*' }), async (req, res) => {
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
     let data = req.body
-    console.log(data)
+    console.log('data=>: ',data)
     await pool.connect().then(async (r) => {
         if (r._connected) {
             query = 'SELECT users.uac_id,users.fullname,users.prim_phone_number,users.email_address,users.national_id,users.photo_id_url, users.passport_picture_url, users.date_posted, users.gender, users.digital_address, users.surburb, users.id_card_type, users.sec_phone_number, users.date_of_birth, users.age,' +
                 ' stores.storenumber,stores.storename FROM users LEFT JOIN uacp ON users.uac_id=uacp.uac_id LEFT JOIN stores ON  uacp.hooked_store=stores.storenumber WHERE users.uac_id=$1'
-            r.query(query, [data.uac], (error, results) => {
+            r.query(query, [data.uacp], (error, results) => {
                 if (error) {
                     console.log(error)
                     r.release()
