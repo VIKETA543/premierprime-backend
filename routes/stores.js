@@ -87,7 +87,7 @@ router.get('/liststoretypes', cors({ origin: '*' }), async (req, res) => {
 
                     console.log("The error ", error)
                     r.release();
-                    return res.status(201).json({ message: error.detail })
+                    return res.status(201).json({ message: error })
                 } else {
                     if (results.rows.length > 0) {
                         r.release();
