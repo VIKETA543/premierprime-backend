@@ -47,7 +47,7 @@ router.get('/listallStores', cors({ origin: '*' }), async (req, res) => {
     console.log(data)
     await pool.connect().then(async (r) => {
         if (r._connected) {
-            query = "SELECT stores.storenumber,stores.storename,stores.storetype,stores.storelacation,stores.digitaladdress,stores.storedescription,stores.dateposted,stores.isstoreopened,stores.storeidentityname FROM stores LEFT JOIN stores ON stores.storetype=stores.storeidentityid"
+            query = "SELECT stores.storenumber,stores.storename,stores.storetype,stores.storelacation,stores.digitaladdress,stores.storedescription,stores.dateposted,stores.isstoreopened,storetype.storeidentityname FROM stores LEFT JOIN storetype ON stores.storetype=storetype.storeidentityid"
             r.query(query, (error, results) => {
                 if (error) {
                     console.log("The error ", error)
