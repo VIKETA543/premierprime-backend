@@ -5,11 +5,6 @@ require('dotenv').config()
 const router = express.Router()
 const multer = require('multer')
 
-
-
-
-
-
 // addidentity
 
 router.post('/addStoretype', cors({ origin: '*' }), async (req, res) => {
@@ -52,12 +47,12 @@ router.get('/listallStores', cors({ origin: '*' }), async (req, res) => {
     console.log(data)
     await pool.connect().then(async (r) => {
         if (r._connected) {
-            query = "SELECT stores.storenumber,stores.storename,stores.storetype,stores.storelacation,stores.digitaladdress,stores.storedescription,stores.dateposted,stores.isstoreopened,tb_store_type.storeidentityname FROM stores LEFT JOIN tb_store_type ON stores.storetype=tb_store_type.storeidentityid"
+            query = "SELECT stores.storenumber,stores.storename,stores.storetype,stores.storelacation,stores.digitaladdress,stores.storedescription,stores.dateposted,stores.isstoreopened,stores.storeidentityname FROM stores LEFT JOIN stores ON stores.storetype=stores.storeidentityid"
             r.query(query, (error, results) => {
                 if (error) {
                     console.log("The error ", error)
                     r.release();
-                    return res.status(400).json({ message: error.detail })
+                    return res.status(201).json({ message: error.detail })
                 } else {
                     if (results.rows.length > 0) {
                         r.release();
