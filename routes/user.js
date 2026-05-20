@@ -384,8 +384,8 @@ router.post('/submitUac', cors({ origin: '*' }), async (req, res) => {
     await pool.connect().then(async (r) => {
         if (r._connected) {
             r.query('BEGIN')
-            query = 'SELECT  uac_id,hook_number  FROM uacp WHERE uac_id=$1 OR hook_number=$2'
-            r.query(query, [data.user, data.hrid], (error, results) => {
+            query = 'SELECT  uac_id,hook_number  FROM uacp WHERE  hook_number=$1'
+            r.query(query, [data.hrid], (error, results) => {
                 if (error) {
                     console.log(error)
                     r.release()
