@@ -15,7 +15,7 @@ router.post('/addStoretype', cors({ origin: '*' }), async (req, res) => {
     console.log(data)
     await pool.connect().then(async (r) => {
         if (r._connected) {
-            query = "INSERT INTO storetype(storeIdentityid,storeIdentityname,storeidenetitydesc,dateposeted,authstore)VALUES($1,$2,$3,$4,$5)"
+            query = "INSERT INTO storetype(storeIdentityid,storeIdentityname,storeidenetitydesc,dateposted,authstore)VALUES($1,$2,$3,$4,$5)"
             r.query(query, [data.storeIdentityID, data.storeIdentityName, data.storeidenetityDesc, data.dateposeted, false], (error, results) => {
                 if (error) {
                     console.log("The error ", error)
@@ -76,7 +76,7 @@ router.get('/liststoretypes', cors({ origin: '*' }), async (req, res) => {
     console.log(data)
     await pool.connect().then(async (r) => {
         if (r._connected) {
-            query = "SELECT storeIdentityid,storeIdentityname,storeidenetitydesc,dateposeted,authstore FROM storetype"
+            query = "SELECT storeIdentityid,storeIdentityname,storeidenetitydesc,dateposted,authstore FROM storetype"
             r.query(query, (error, results) => {
                 if (error) {
 
@@ -259,7 +259,7 @@ router.post('/poststocksummeries', cors({ origin: '*' }), async (req, res) => {
                                                                             return res.status(201).json({ message: error.detail })
                                                                         } else {
 
-                                                                            query = "INSERT INTO tb_daily_rotating_Stock(store_number, product_number, avaible_quantity, date_posted, is_current, product_brand, new_quantity, total_quantity)VALUES($1,$2,$3,$4,$5,$6,$7,$8)"
+                                                                            query = "INSERT INTO tb_daily_rotating_Stock(store_number, product_number, avaible_quantity, date_posted, is_current, product_brand, new_quantity, stock_balance)VALUES($1,$2,$3,$4,$5,$6,$7,$8)"
                                                                             r.query(query, [data.store_id, data.product_number, prevqty, data.transation_date, data.is_stock_opened, data.stock_brandd, data.new_quantity, rws.total_quantity], (error, results) => {
                                                                                 if (error) {
                                                                                     console.log("The error ", error)
@@ -1496,9 +1496,9 @@ router.post('/submitReques', cors({ origin: '*' }), async (req, res) => {
                     return res.status(201).json({ message: error.detail })
                 } else {
                     const ifRows = results.rows.length
-                    console.log('ifRows: ', results.rows.length)
-                    if (results.rows.length > 0) {
 
+                    if (results.rows.length > 0) {
+                        console.log('ifRows: ', results.rows.length)
                         const check = results.rows[0].request_approved
                         if (check === true) {
                             r.release();
@@ -1506,9 +1506,8 @@ router.post('/submitReques', cors({ origin: '*' }), async (req, res) => {
 
                         } else {
                             if (check === false) {
-
-                                query = 'INSERT INTO store_stock_request(product_number,brand_number,cartegory,request_number,quantity,store_number,date_resquested,is_submitted,request_approved,date_approved,description,itemrowid)VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)'
-                                r.query(query, [data.productNumber, data.productBrand, data.category, data.requestNumber, data.quantity, data.storeNumber, data.reuqestDat, false, false, null, data.description, data.itemrowid], (error, results) => {
+                                query = 'INSERT INTO store_stock_request(product_number,brand_number,cartegory,request_number,quantity,store_number,date_resquested,is_submitted,request_approved,date_approved,description,itemrowid,warehouse_number)VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)'
+                                r.query(query, [data.productNumber, data.productBrand, data.category, data.requestNumber, data.quantity, data.storeNumber, data.reuqestDat, false, false, null, data.description, data.itemrowid, data.selectedwarehouse], (error, results) => {
                                     if (error) {
                                         console.log(error)
                                         r.release();
@@ -1532,107 +1531,41 @@ router.post('/submitReques', cors({ origin: '*' }), async (req, res) => {
                         }
 
                     } else {
-                        if (data.isMultiple === true) {
-
-                            if (ifRows > 0) {
-
-                                query = 'INSERT INTO store_stock_request(product_number,brand_number,cartegory,request_number,quantity,store_number,date_resquested,is_submitted,request_approved,date_approved,description,itemrowid)VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)'
-                                r.query(query, [data.productNumber, data.productBrand, data.category, data.requestNumber, data.quantity, data.storeNumber, data.reuqestDat, false, false, null, data.description, data.itemrowid], (error, results) => {
-                                    if (error) {
-                                        console.log(error)
-                                        r.release();
-                                        return res.status(201).json({ message: error.detail })
-                                    } else {
-                                        if (results.rowCount > 0) {
-                                            console.log('success')
-                                            r.release();
-                                            return res.status(200).json({ success: 'Item added successfully' })
-                                        } else {
-                                            r.release();
-                                            console.log('success')
-                                            return res.status(200).json({ message: 'Request failed' })
-                                        }
-                                    }
-                                })
-
+                        console.log('firs insertion')
+                        query = 'INSERT INTO stock_request_control(request_number,date_resquested,is_submitted,store_number)VALUES($1,$2,$3,$4) '
+                        r.query(query, [data.requestNumber, data.reuqestDat, false, data.storeNumber], (error, results) => {
+                            if (error) {
+                                console.log(error)
+                                r.release();
                             } else {
-                                console.log('firs insertion')
-                                query = 'INSERT INTO stock_request_control(request_number,date_resquested,is_submitted,store_number)VALUES($1,$2,$3,$4) '
-                                r.query(query, [data.requestNumber, data.reuqestDat, false, data.storeNumber], (error, results) => {
-                                    if (error) {
-                                        console.log(error)
-                                        r.release();
-                                    } else {
-                                        if (results.rowCount > 0) {
-                                            query = 'INSERT INTO store_stock_request(product_number,brand_number,cartegory,request_number,quantity,store_number,date_resquested,is_submitted,request_approved,date_approved,description,itemrowid)VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)'
-                                            r.query(query, [data.productNumber, data.productBrand, data.category, data.requestNumber, data.quantity, data.storeNumber, data.reuqestDat, false, false, null, data.description, data.itemrowid], (error, results) => {
-                                                if (error) {
-                                                    console.log(error)
-                                                    r.release();
-                                                    return res.status(201).json({ message: error.detail })
-                                                } else {
-                                                    if (results.rowCount > 0) {
-                                                        console.log('success')
-                                                        r.release();
-                                                        return res.status(200).json({ success: 'Item added successfully' })
-                                                    } else {
-                                                        r.release();
-                                                        console.log('success')
-                                                        return res.status(200).json({ message: 'Request failed' })
-                                                    }
-                                                }
-                                            })
-
-                                        } else {
+                                if (results.rowCount > 0) {
+                                    query = 'INSERT INTO store_stock_request(product_number,brand_number,cartegory,request_number,quantity,store_number,date_resquested,is_submitted,request_approved,date_approved,description,itemrowid,warehouse_number)VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)'
+                                    r.query(query, [data.productNumber, data.productBrand, data.category, data.requestNumber, data.quantity, data.storeNumber, data.reuqestDat, false, false, null, data.description, data.itemrowid, data.to_warehouse], (error, results) => {
+                                        if (error) {
+                                            console.log(error)
                                             r.release();
-                                            return res.status(201).json({ message: 'Request failed.' })
+                                            return res.status(201).json({ message: error.detail })
+                                        } else {
+                                            if (results.rowCount > 0) {
+                                                console.log('success')
+                                                r.release();
+                                                return res.status(200).json({ success: 'Item added successfully' })
+                                            } else {
+                                                r.release();
+                                                console.log('success')
+                                                return res.status(200).json({ message: 'Request failed' })
+                                            }
                                         }
-                                    }
-                                })
+                                    })
+
+                                }
+
 
                             }
-
-                        } else {
-
-                            query = 'INSERT INTO stock_request_control(request_number,date_resquested,is_submitted,store_number)VALUES($1,$2,$3,$4) '
-                            r.query(query, [data.requestNumber, data.reuqestDat, false, data.storeNumber], (error, results) => {
-                                if (error) {
-                                    console.log(error)
-                                    r.release();
-                                } else {
-                                    if (results.rowCount > 0) {
-                                        query = 'INSERT INTO store_stock_request(product_number,brand_number,cartegory,request_number,quantity,store_number,date_resquested,is_submitted,request_approved,date_approved,description,itemrowid)VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)'
-                                        r.query(query, [data.productNumber, data.productBrand, data.category, data.requestNumber, data.quantity, data.storeNumber, data.reuqestDat, false, false, null, data.description, data.itemrowid], (error, results) => {
-                                            if (error) {
-                                                console.log(error)
-                                                r.release();
-                                                return res.status(201).json({ message: error.detail })
-                                            } else {
-                                                if (results.rowCount > 0) {
-                                                    console.log('success')
-                                                    r.release();
-                                                    return res.status(200).json({ success: 'Item added successfully' })
-                                                } else {
-                                                    r.release();
-                                                    console.log(failed)
-                                                    return res.status(200).json({ message: 'Request failed' })
-                                                }
-                                            }
-                                        })
-
-                                    } else {
-                                        r.release();
-                                        return res.status(201).json({ message: 'Request failed.' })
-                                    }
-                                }
-                            })
-
-
-                        }
+                        })
                     }
                 }
             })
-
         } else {
             r.release();
             console.log('Unable to connection to the Database')
@@ -1640,6 +1573,43 @@ router.post('/submitReques', cors({ origin: '*' }), async (req, res) => {
         }
     })
 })
+
+
+
+router.post('/addmoreProducts', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    console.log('data,', data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+
+            query = 'INSERT INTO store_stock_request(product_number,brand_number,cartegory,request_number,quantity,store_number,date_resquested,is_submitted,request_approved,date_approved,description,itemrowid,warehouse_number)VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)'
+            r.query(query, [data.productNumber, data.productBrand, data.category, data.requestNumber, data.quantity, data.storeNumber, data.reuqestDat, false, false, null, data.description, data.itemrowid, data.to_warehouse], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release();
+                    return res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rowCount > 0) {
+                        r.release();
+                        return res.status(200).json({ success: 'Item added successfully' })
+                    } else {
+                        r.release();
+                        return res.status(200).json({ message: 'Request failed' })
+                    }
+                }
+            })
+        } else {
+            r.release();
+            console.log('Unable to connection to the Database')
+            return res.status(201).json({ message: "Unable to connection to the Database" })
+        }
+    })
+})
+
+
 
 
 
@@ -1686,8 +1656,8 @@ router.post('/find_store_request', cors({ origin: '*' }), async (req, res) => {
     await pool.connect().then(async (r) => {
         if (r._connected) {
             query = 'SELECT store_stocK_request.product_number, store_stocK_request.brand_number, store_stocK_request.cartegory, store_stocK_request.request_number, store_stocK_request.quantity, store_stocK_request.store_number, store_stocK_request.date_resquested, ' +
-                'store_stocK_request.is_submitted, store_stocK_request.request_approved, store_stocK_request.date_approved, store_stocK_request.description,store_stocK_request.itemrowid,' +
-                'products.name, productbrand.title FROM store_stocK_request LEFT JOIN products ON store_stocK_request.product_number=products.serialnumber LEFT JOIN productbrand ON store_stocK_request.brand_number=productbrand.brandid WHERE store_stocK_request.request_number=$1'
+                'store_stocK_request.is_submitted, store_stocK_request.request_approved, store_stocK_request.date_approved, store_stocK_request.description,store_stocK_request.itemrowid,store_stocK_request.warehouse_number,warehouse.warehousename,' +
+                'products.name, productbrand.title FROM store_stocK_request LEFT JOIN products ON store_stocK_request.product_number=products.serialnumber LEFT JOIN productbrand ON store_stocK_request.brand_number=productbrand.brandid, LEFT JOIN warehouse ON store_stocK_request.warehouse_number=warehouse.whse_serialnumber  WHERE store_stocK_request.request_number=$1'
             r.query(query, [data.request_number], (error, results) => {
                 if (error) {
                     console.log(error)
@@ -1695,6 +1665,7 @@ router.post('/find_store_request', cors({ origin: '*' }), async (req, res) => {
                     return res.status(201).json({ message: error.detail })
                 } else {
                     if (results.rows.length > 0) {
+                        console.log('The data founds:', results.rows)
                         r.release();
                         return res.status(200).json({ data: results.rows })
 
@@ -1800,8 +1771,8 @@ router.post('/findPending', cors({ origin: '*' }), async (req, res) => {
         if (r._connected) {
             query = 'SELECT store_stocK_request.product_number, store_stocK_request.brand_number, store_stocK_request.cartegory, store_stocK_request.request_number, store_stocK_request.quantity, store_stocK_request.store_number, store_stocK_request.date_resquested, ' +
                 'store_stocK_request.is_submitted, store_stocK_request.request_approved, store_stocK_request.date_approved, store_stocK_request.description,store_stocK_request.itemrowid,' +
-                'products.name, productbrand.title FROM store_stocK_request LEFT JOIN products ON store_stocK_request.product_number=products.serialnumber LEFT JOIN productbrand ON store_stocK_request.brand_number=productbrand.brandid WHERE store_stocK_request.store_number=$1 AND store_stocK_request.request_approved=$2'
-            r.query(query, [data.storeNumber, false], (error, results) => {
+                'products.name, productbrand.title FROM store_stocK_request LEFT JOIN products ON store_stocK_request.product_number=products.serialnumber LEFT JOIN productbrand ON store_stocK_request.brand_number=productbrand.brandid WHERE store_stocK_request.store_number=$1 AND store_stocK_request.request_approved=$2 AND store_stocK_request.is_submitted=$3'
+            r.query(query, [data.storeNumber, false, true], (error, results) => {
                 if (error) {
                     console.log(error)
                     r.release();
@@ -1809,27 +1780,27 @@ router.post('/findPending', cors({ origin: '*' }), async (req, res) => {
                 } else {
                     if (results.rows.length > 0) {
                         const pending = results.rows
-                        query = 'SELECT request_number FROM stock_request_control WHERE request_approved=$1 AND store_number=$2'
-                        r.query(query, [false, data.storeNumber], (error, results) => {
+                        query = 'SELECT request_number FROM stock_request_control WHERE request_approved=$1 AND store_number=$2 AND is_submitted=$3'
+                        r.query(query, [false, data.storeNumber, true], (error, results) => {
                             if (error) {
                                 console.log(error)
                                 r.release();
                                 return res.status(201).json({ message: error.detail })
                             } else {
                                 if (results.rows.length > 0) {
-                                    console.log( results.rows)
-                                r.release();
+                                    console.log(results.rows)
+                                    r.release();
                                     return res.status(200).json({ data: pending, requests: results.rows })
                                 } else {
-                                     r.release();
-                                     console.log('no results found')
+                                    r.release();
+                                    return res.status(201).json({ message: 'Pening request could not be loaded' })
                                 }
                             }
                         })
                     } else {
                         r.release();
                         console.log('Not found')
-                        return res.status(201).json({ message: 'No request place for your store' })
+                        return res.status(201).json({ message: 'No pending request available' })
                     }
                 }
             })
@@ -1879,30 +1850,144 @@ router.post('/dropRequest_Item', cors({ origin: '*' }), async (req, res) => {
 // load_store_request_history
 
 
-router.post('/load_store_request_history', cors({ origin: '*' }), async (req, res) => {
+router.post('/loadUnsubmitted', cors({ origin: '*' }), async (req, res) => {
     res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
     let data = req.body
     await pool.connect().then(async (r) => {
         if (r._connected) {
+
+            query = 'SELECT  request_number FROM stock_request_control WHERE  store_number=$1 AND is_submitted=$2'
+            r.query(query, [data.storeNumber, false], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release();
+                    return res.status(201).json({ message: error.detail })
+                } else {
+                    if (results?.rows.length > 0) {
+                        const req_nos = results.rows
+                        console.log('Unsubmiited info',req_nos)
+                        query = 'SELECT store_stocK_request.product_number, store_stocK_request.brand_number, store_stocK_request.cartegory, store_stocK_request.request_number, store_stocK_request.quantity, store_stocK_request.store_number, store_stocK_request.date_resquested, ' +
+                            'store_stocK_request.is_submitted, store_stocK_request.request_approved, store_stocK_request.date_approved, store_stocK_request.description,store_stocK_request.itemrowid,' +
+                            'products.name, productbrand.title FROM store_stocK_request LEFT JOIN products ON store_stocK_request.product_number=products.serialnumber LEFT JOIN productbrand ON store_stocK_request.brand_number=productbrand.brandid WHERE store_stocK_request.store_number=$1 AND store_stocK_request.is_submitted=$2'
+                        r.query(query, [data.storeNumber, false], (error, results) => {
+                            if (error) {
+                                console.log(error)
+                                r.release();
+                                return res.status(201).json({ message: error.detail })
+                            } else {
+                                if (results.rows.length > 0) {
+                                    let u = results.rows
+                                    r.release();
+                                    return res.status(200).json({ data: u, req_nos:req_nos })
+
+                                } else {
+                                    r.release();
+                                    console.log('Not found')
+                                    return res.status(201).json({ message: 'You have no Unsubmitted request' })
+                                }
+                            }
+                        })
+
+                    } else {
+                           r.release();
+            return res.status(201).json({ message: "No pending unsubmitted available" })
+                    }
+                }
+            })
+
+        } else {
+            r.release();
+            return res.status(201).json({ message: "Unable to connection to the Database" })
+        }
+    })
+})
+
+
+
+
+
+router.post('/requestHistory', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+
+    await pool.connect().then(async (r) => {
+
+        if (r._connected) {
             query = 'SELECT store_stocK_request.product_number, store_stocK_request.brand_number, store_stocK_request.cartegory, store_stocK_request.request_number, store_stocK_request.quantity, store_stocK_request.store_number, store_stocK_request.date_resquested, ' +
                 'store_stocK_request.is_submitted, store_stocK_request.request_approved, store_stocK_request.date_approved, store_stocK_request.description,store_stocK_request.itemrowid,' +
-                'products.name, productbrand.title FROM store_stocK_request LEFT JOIN products ON store_stocK_request.product_number=products.serialnumber LEFT JOIN productbrand ON store_stocK_request.brand_number=productbrand.brandid WHERE store_stocK_request.store_number=$1'
-            r.query(query, [data.storeNumber], (error, results) => {
+                'products.name, productbrand.title FROM store_stocK_request LEFT JOIN products ON store_stocK_request.product_number=products.serialnumber LEFT JOIN productbrand ON store_stocK_request.brand_number=productbrand.brandid WHERE store_stocK_request.store_number=$1 AND store_stocK_request.is_submitted=$2 AND store_stocK_request.is_submitted=$3'
+            r.query(query, [data.storeNumber, true, true], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release();
+                    return res.status(201).json({ message: error.detail })
+                } else {
+                 console.log(results.rows)
+                    if (results.rows.length > 0) {
+                    
+                        r.release();
+                        return res.status(200).json({ data:results.rows })
+                    } else {
+                        r.release();
+                        console.log('Not found')
+                        return res.status(201).json({ message: 'No request history' })
+                    }
+                }
+            })
+
+        } else {
+            r.release();
+            return res.status(201).json({ message: "Unable to connection to the Database" })
+        }
+    })
+})
+
+
+
+
+
+
+router.post('/load_selected_Unsubmitted', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    console.log(data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = 'SELECT store_stocK_request.product_number, store_stocK_request.brand_number, store_stocK_request.cartegory, store_stocK_request.request_number, store_stocK_request.quantity, store_stocK_request.store_number, store_stocK_request.date_resquested, ' +
+                'store_stocK_request.is_submitted, store_stocK_request.request_approved, store_stocK_request.date_approved, store_stocK_request.description,store_stocK_request.itemrowid,' +
+                'products.name, productbrand.title FROM store_stocK_request LEFT JOIN products ON store_stocK_request.product_number=products.serialnumber LEFT JOIN productbrand ON store_stocK_request.brand_number=productbrand.brandid ' +
+                ' WHERE store_stocK_request.store_number=$1 AND  store_stocK_request.request_number=$2 AND store_stocK_request.is_submitted=$3'
+            r.query(query, [data.storeNumber, data.request_number, false], (error, results) => {
                 if (error) {
                     console.log(error)
                     r.release();
                     return res.status(201).json({ message: error.detail })
                 } else {
                     if (results.rows.length > 0) {
-                        r.release();
-                        return res.status(200).json({ data: results.rows })
+                        let u = results.rows
+                        query = 'SELECT DISTINCT request_number FROM store_stocK_request WHERE request_approved=$1 AND store_number=$2 AND is_submitted=$3 AND store_stocK_request.request_number=$4'
+                        r.query(query, [false, data.request_number, false, data.request_number], (error, results) => {
+                            if (error) {
+                                console.log(error)
+                                r.release();
+                                return res.status(201).json({ message: error.detail })
+                            } else {
+                                r.release();
+                                return res.status(200).json({ data: u, req_nos: results.rows })
+                            }
+                        })
+
 
                     } else {
                         r.release();
-                        console.log('Not found')
-                        return res.status(201).json({ message: 'No request place for your store' })
+                        console.log('Not found pending')
+                        return res.status(201).json({ message: 'You have no Unsubmitted request' })
                     }
                 }
             })
@@ -1977,7 +2062,7 @@ router.post('/submitRequest', cors({ origin: '*' }), async (req, res) => {
                     } else {
                         r.release();
                         r.query('ROLLBACK')
-                        console.log('request not found')
+                        console.log(' ====request not found=====')
                         return res.status(201).json({ message: 'Request is not available' })
                     }
                 }
@@ -2000,14 +2085,66 @@ router.post('/findPendingItem', cors({ origin: '*' }), async (req, res) => {
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
     let data = req.body
-    console.log('finding',data)
+    console.log('finding', data)
     await pool.connect().then(async (r) => {
         if (r._connected) {
             query = 'SELECT store_stocK_request.product_number, store_stocK_request.brand_number, store_stocK_request.cartegory, store_stocK_request.request_number, store_stocK_request.quantity, store_stocK_request.store_number, store_stocK_request.date_resquested, ' +
-                'store_stocK_request.is_submitted, store_stocK_request.request_approved, store_stocK_request.date_approved, store_stocK_request.description,store_stocK_request.itemrowid,' +
-                'products.name, productbrand.title FROM store_stocK_request LEFT JOIN products ON store_stocK_request.product_number=products.serialnumber LEFT JOIN productbrand ON'+
-                ' store_stocK_request.brand_number=productbrand.brandid WHERE store_stocK_request.store_number=$1 AND store_stocK_request.request_number=$2'
-            r.query(query, [data.store_number,data.request_number ], (error, results) => {
+                'store_stocK_request.is_submitted, store_stocK_request.request_approved, store_stocK_request.date_approved, store_stocK_request.description,store_stocK_request.itemrowid,warehouse.warehousename,store_stock_request.warehouse_number,' +
+                'products.name, productbrand.title FROM store_stocK_request LEFT JOIN products ON store_stocK_request.product_number=products.serialnumber LEFT JOIN productbrand ON ' +
+                ' store_stocK_request.brand_number=productbrand.brandid LEFT JOIN warehouse ON store_stock_request.warehouse_number=warehouse.whse_serialnumber WHERE store_stocK_request.store_number=$1 AND store_stocK_request.request_number=$2 AND store_stocK_request.is_submitted=$3 AND store_stocK_request.request_approved=$4 '
+            r.query(query, [data.store_number, data.request_number,true,false], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release();
+                    return res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rows.length > 0) {
+                        const rows = results.rows
+                        query = 'SELECT * FROM stockoperation_controls WHERE controlname=$1'
+                        r.query(query, ['STORE_REQUEST_APPROVAL'], (error, results) => {
+                            if (error) {
+                                console.log(error)
+                                r.release();
+                                return res.status(201).json({ message: error.detail })
+                            } else {
+                                if (results.rows.length > 0) {
+                                    r.release();
+                                    return res.status(200).json({ data: rows, control: results.rows })
+                                } else {
+                                    return res.status(201).json({ message: 'Operation controls could not be found. Initialize controls to continue' })
+                                }
+                            }
+                        })
+
+
+                    } else {
+                        r.release();
+                        console.log('Not found')
+                        return res.status(201).json({ message: 'No request place for your store' })
+                    }
+                }
+            })
+
+        } else {
+            r.release();
+            return res.status(201).json({ message: "Unable to connection to the Database" })
+        }
+    })
+})
+
+// 
+
+
+router.post('/warehouserequestload', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    console.log('finding', data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = 'SELECT request_number,date_resquested,request_approved,store_number FROM  stock_request_control  WHERE store_number=$1 AND request_approved=$2'
+            r.query(query, [data.store_number, false], (error, results) => {
                 if (error) {
                     console.log(error)
                     r.release();
@@ -2031,5 +2168,118 @@ router.post('/findPendingItem', cors({ origin: '*' }), async (req, res) => {
         }
     })
 })
+
+
+router.post('/warehouserequestloadbyrequestnumber', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    console.log('finding', data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = 'SELECT request_number,date_resquested,request_approved,store_number FROM  stock_request_control  WHERE store_number=$1 AND request_approved=$2'
+            r.query(query, [data.request_number, false], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release();
+                    return res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rows.length > 0) {
+                        r.release();
+                        return res.status(200).json({ data: results.rows })
+
+                    } else {
+                        r.release();
+                        console.log('Not found')
+                        return res.status(201).json({ message: 'No request place for your store' })
+                    }
+                }
+            })
+
+        } else {
+            r.release();
+            return res.status(201).json({ message: "Unable to connection to the Database" })
+        }
+    })
+})
+
+
+// 
+
+
+router.post('/loadcurrentStocklevel', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = 'SELECT tb_daily_rotating_stock.product_number, tb_daily_rotating_stock.product_brand, tb_daily_rotating_stock.store_number, tb_daily_rotating_stock.avaible_quantity, tb_daily_rotating_stock.quantity_sold, tb_daily_rotating_stock.stock_balance, tb_daily_rotating_stock.is_current, tb_daily_rotating_stock.date_posted, tb_daily_rotating_stock.new_quantity, products.name, productbrand.title,productbrand.imageurl FROM tb_daily_rotating_stock LEFT JOIN products ON tb_daily_rotating_stock.product_number=products.serialnumber LEFT JOIN productbrand ON tb_daily_rotating_stock.product_brand=productbrand.brandid WHERE tb_daily_rotating_stock.store_number=$1 AND tb_daily_rotating_stock.is_current=$2'
+            r.query(query, [data.store_number, true], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release();
+                    return res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rows.length > 0) {
+                        r.release();
+                        return res.status(200).json({ data: results.rows })
+
+                    } else {
+                        r.release();
+                        console.log('Not found')
+                        return res.status(201).json({ message: 'No request place for your store' })
+                    }
+                }
+            })
+
+        } else {
+            r.release();
+            return res.status(201).json({ message: "Unable to connection to the Database" })
+        }
+    })
+})
+
+
+
+
+
+router.post('/loadtransactions', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    console.log('finding', data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = 'SELECT tb_daily_rotating_stock.product_number, tb_daily_rotating_stock.product_brand, tb_daily_rotating_stock.store_number, tb_daily_rotating_stock.avaible_quantity, tb_daily_rotating_stock.quantity_sold, tb_daily_rotating_stock.stock_balance, tb_daily_rotating_stock.is_current, tb_daily_rotating_stock.date_posted, tb_daily_rotating_stock.new_quantity, products.name, productbrand.title,productbrand.imageurl FROM tb_daily_rotating_stock LEFT JOIN products ON tb_daily_rotating_stock.product_number=products.serialnumber LEFT JOIN productbrand ON tb_daily_rotating_stock.product_brand=productbrand.brandid WHERE tb_daily_rotating_stock.store_number=$1 AND tb_daily_rotating_stock.product_brand=$2 AND tb_daily_rotating_stock.product_number=$3 '
+            r.query(query, [data.store_number, data.product_brand,data.product_number], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release();
+                    return res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rows.length > 0) {
+                        console.log('The data: ',results.rows)
+                        r.release();
+                        return res.status(200).json({ data: results.rows })
+
+                    } else {
+                        r.release();
+                        console.log('Not found')
+                        return res.status(201).json({ message: 'No request place for your store' })
+                    }
+                }
+            })
+
+        } else {
+            r.release();
+            return res.status(201).json({ message: "Unable to connection to the Database" })
+        }
+    })
+})
+
 
 module.exports = router

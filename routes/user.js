@@ -218,6 +218,7 @@ router.post('/submitpassword', cors({ origin: '*' }), async (req, res) => {
         ]);
 
         if (insertResult.rowCount > 0) {
+            console.log('Password successfully set for user with uac_id:', data.uac);
             return res.status(200).json({
                 success: 'Password successfully set! Wait for account approval from admin'
             });
@@ -249,12 +250,13 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
         client = await pool.connect();
 
         // 2. Check if the password/user already exists
-        const checkQuery = 'SELECT uac_id FROM users WHERE email_address = $1 OR prim_phone_number=$2';
+        const checkQuery = 'SELECT * FROM users WHERE email_address = $1 OR prim_phone_number=$2';
         const checkResult = await client.query(checkQuery, [data.email, data.email]);
-        console.log('email correct')
+      
         if (checkResult.rows.length > 0) {
+            //   console.log('email correct',checkResult.rows)
             const saveUac = checkResult.rows[0].uac_id
-            console.log('uac', saveUac)
+            // console.log('uac', checkResult.rows)
             const findPasswordquery = 'SELECT u_passward FROM tb_auth WHERE uac_id=$1';
             const oldPassword = await client.query(findPasswordquery, [saveUac])
 
@@ -317,7 +319,7 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
 
 
             } else {
-                return res.status(201).json({ message: 'Invalid password supplied' })
+                return res.status(201).json({ NO_PASSWORD: 'NO_PASSWORD_FOUND' })
             }
 
         } else {
@@ -529,6 +531,47 @@ router.post('/loadUserInformation', cors({ origin: '*' }), async (req, res) => {
         }
     })
 })
+
+
+
+// resetPassword
+
+
+router.post('/resetPassword', cors({ origin: '*' }), async (req, res) => {
+
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    console.log(data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = 'SELECT uac_id, fullname, prim_phone_number, email_address, national_id, date_posted, gender, digital_address, surburb, id_card_type, sec_phone_number,date_of_birth,age FROM users WHERE email_address = $1'
+            r.query(query, [data.emailAddress], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release()
+                    res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rows.length > 0) {
+                        r.release()
+                        return res.status(200).json({ data: results.rows })
+                    } else {
+                        r.release()
+                               console.log('Signing failed')
+                        return res.status(200).json({ message: 'Invalid email Address' })
+                    }
+                }
+            })
+
+
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Failed to connect to the database' })
+        }
+    })
+})
+
 
 
 module.exports = router
