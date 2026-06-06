@@ -289,7 +289,7 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
                                             const id=results.rows[0].uac_id
                                             if (approval === true) {
 
-                                                return res.status(201).json({ success: 'Login succesful', hook: saved_hook,uac_id:id })
+                                                return res.status(201).json({ success: 'Login succesful', hook: saved_hook,uac_id:id,user:checkResult.rows[0] })
                                             } else {
                                                 if (approval === false) {
                                                     return res.status(201).json({ denied: 'Unable to login. Access denied' })
@@ -468,8 +468,17 @@ router.post('/authrole', cors({ origin: '*' }), async (req, res) => {
                     if (results.rows.length > 0) {
                         const auth = results.rows[0].access
                         if (auth === true) {
-                            console.log('authorisation suucess')
-                            return res.status(200).json({ success: 'Authorisation successful', data: results.rows })
+                            console.log('authorisation suucess ON STORE',results.rows)
+                            query = 'SELECT storenumber, storename FROM stores WHERE storenumber=$1'
+                            r.query(query, [results.rows[0].hooked_store], (error, storeResults) => {
+                                if (error) {
+                                    console.log(error)
+                                    r.release()
+                                    res.status(201).json({ message: error.detail })
+                                } else {
+                                    return res.status(200).json({ success: 'Authorisation successful', data: results.rows, storeData: storeResults.rows })
+                                }
+                            })
                         } else {
                             if (auth === false) {
                                 console.log('auth failed')

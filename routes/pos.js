@@ -142,7 +142,7 @@ router.post('/load_invoice_for_update', cors({ origin: '*' }), async (req, res) 
     res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
-    console.log('load_invoice_for_update',data)
+    console.log('load_invoice_for_update', data)
     await pool.connect().then(async (r) => {
         if (r._connected) {
             try {
@@ -154,13 +154,13 @@ router.post('/load_invoice_for_update', cors({ origin: '*' }), async (req, res) 
                         return res.status(201).json({ message: error })
                     } else {
                         if (results.rows.length > 0) {
-                       
+
                             if (results.rows[0].isinvoice_verified === true) {
                                 r.release()
                                 console.log(error)
                                 return res.status(201).json({ message: 'Invoice has already been verified. Prepare a new invoice' })
                             } else {
-                                const invoiceData=results.rows
+                                const invoiceData = results.rows
                                 query = "SELECT tb_cash_sale_temp.invoice_number,tb_cash_sale_temp.purchaseid,tb_cash_sale_temp.ProductId,tb_cash_sale_temp.brand,tb_cash_sale_temp.quantity,tb_cash_sale_temp.unitprice,tb_cash_sale_temp.totalcost, productbrand.title,products.name,stores.storename FROM tb_cash_sale_temp LEFT JOIN  products ON  tb_cash_sale_temp.ProductId=products.serialnumber LEFT JOIN productbrand ON tb_cash_sale_temp.brand=productbrand.brandid LEFT JOIN stores ON tb_cash_sale_temp.store_number=stores.storenumber  WHERE tb_cash_sale_temp.invoice_number=$1  "
                                 r.query(query, [data.invoceNumber], (error, results) => {
                                     if (error) {
@@ -181,7 +181,7 @@ router.post('/load_invoice_for_update', cors({ origin: '*' }), async (req, res) 
                                                     if (results.rows.length > 0) {
                                                         console.log(rws)
                                                         r.release()
-                                                        return res.status(200).json({ data: rws, sumtotal: results.rows,invoice:invoiceData })
+                                                        return res.status(200).json({ data: rws, sumtotal: results.rows, invoice: invoiceData })
                                                     } else {
                                                         console.log('failed')
                                                         r.release()
@@ -237,7 +237,7 @@ router.post('/load_credit_invoice_for_update', cors({ origin: '*' }), async (req
     res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
-    console.log('checking Data: =>',data)
+    console.log('checking Data: =>', data)
     await pool.connect().then(async (r) => {
         if (r._connected) {
             try {
@@ -249,13 +249,13 @@ router.post('/load_credit_invoice_for_update', cors({ origin: '*' }), async (req
                         return res.status(201).json({ message: error })
                     } else {
                         if (results.rows.length > 0) {
-                       
+
                             if (results.rows[0].isinvoice_verified === true) {
                                 r.release()
                                 console.log(error)
                                 return res.status(201).json({ message: 'Invoice has already been verified. Prepare a new invoice' })
                             } else {
-                                const invoiceData=results.rows
+                                const invoiceData = results.rows
                                 query = "SELECT tb_credit_saletemp.invoice_number,tb_credit_saletemp.purchaseid,tb_credit_saletemp.ProductId,tb_credit_saletemp.brand,tb_credit_saletemp.quantity,tb_credit_saletemp.unitprice,tb_credit_saletemp.totalcost, productbrand.title,products.name,stores.storename FROM tb_credit_saletemp LEFT JOIN  products ON  tb_credit_saletemp.ProductId=products.serialnumber LEFT JOIN productbrand ON tb_credit_saletemp.brand=productbrand.brandid LEFT JOIN stores ON tb_credit_saletemp.store_number=stores.storenumber  WHERE tb_credit_saletemp.invoice_number=$1  "
                                 r.query(query, [data.invoceNumber], (error, results) => {
                                     if (error) {
@@ -276,7 +276,7 @@ router.post('/load_credit_invoice_for_update', cors({ origin: '*' }), async (req
                                                     if (results.rows.length > 0) {
                                                         console.log(rws)
                                                         r.release()
-                                                        return res.status(200).json({ data: rws, sumtotal: results.rows,invoice:invoiceData })
+                                                        return res.status(200).json({ data: rws, sumtotal: results.rows, invoice: invoiceData })
                                                     } else {
                                                         console.log('failed')
                                                         r.release()
@@ -613,8 +613,8 @@ router.post('/openInvoice', cors({ origin: '*' }), async (req, res) => {
                             r.release()
                             res.status(200).json({ message: 'Invoice Already registered' })
                         } else {
-                            query = "INSERT INTO tb_cashsale_invoices(invoice_number, dateposted, customername, emailadress, address, customertype,telephone,customerid)VALUES($1,$2,$3,$4,$5,$6,$7,$8)"
-                            r.query(query, [data.invoiceNumber, data.dateposted, data.customername, data.emailadress, data.addresss, data.customerType, data.telephone, data.cutomerNumber], (error, results) => {
+                            query = "INSERT INTO tb_cashsale_invoices(invoice_number, dateposted, customername, emailadress, address, customertype,telephone,customerid,preparedby)VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)"
+                            r.query(query, [data.invoiceNumber, data.dateposted, data.customername, data.emailadress, data.addresss, data.customerType, data.telephone, data.cutomerNumber, data.preparedBy], (error, results) => {
                                 if (error) {
                                     console.log(error)
                                     r.release()
@@ -671,6 +671,7 @@ router.post('/submitInvoice', cors({ origin: '*' }), async (req, res) => {
                             var counter = 0
                             r.query('BEGIN')
                             while (counter < rws.length) {
+                                console.log('Inserting into cache sales invoices')
                                 query = 'INSERT INTO  tb_cash_sales(invoice_number,product_number,purchaseid,product_brand,quantity_sold,unit_price,total_price,dateposted,store_number)VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)'
                                 r.query(query, [rws[counter].invoice_number, rws[counter].productid, rws[counter].purchaseid, rws[counter].brand, rws[counter].quantity, rws[counter].unitprice, rws[counter].totalcost, new Date(), rws[counter].store_number], (error, results) => {
                                     if (error) {
@@ -703,72 +704,71 @@ router.post('/submitInvoice', cors({ origin: '*' }), async (req, res) => {
                                         console.log('inserting into invoice summaries', rws[0].store_number)
 
                                         counter = 0
-                                        while (counter < rws.length) {
-                                            query = 'INSERT INTO invoice_summaries(invoice_number,invoice_total,dateposted,sales_type,payment_progress,store_number)VALUES($1,$2,$3,$4,$5,$6)'
-                                            r.query(query, [data.invoceNumber, data.sumInvoiceTotal, new Date(), data.salesObject, 'NO_PAYMENT_MADE', rws[counter].store_number], (error, results) => {
-                                                if (error) {
-                                                    console.log('Error==== ', error)
-                                                    r.release()
-                                                    r.query('ROLLBACK')
-                                                    return res.status(201).json({ message: error })
-                                                } else {
-                                                    if (results.rowCount > 0) {
-                                                        query = 'UPDATE tb_cashsale_invoices SET invoice_submitted=$1 WHERE invoice_number=$2'
-                                                        r.query(query, [true, data.invoceNumber], (error, results) => {
-                                                            if (error) {
-                                                                console.log(error)
-                                                                r.release()
-                                                                r.query('ROLLBACK')
-                                                            } else {
-                                                                if (results.rowCount > 0) {
-                                                                    query = 'UPDATE  tb_cash_sales SET invoice_submitted=$1 WHERE invoice_number=$2'
-                                                                    r.query(query, [true, data.invoceNumber], (error, results) => {
-                                                                        if (error) {
-                                                                            console.log(error)
-                                                                            r.release()
-                                                                            r.query('ROLLBACK')
+
+                                        query = 'INSERT INTO invoice_summaries(invoice_number,invoice_total,dateposted,sales_type,payment_progress,store_number)VALUES($1,$2,$3,$4,$5,$6)'
+                                        r.query(query, [data.invoceNumber, data.sumInvoiceTotal, new Date(), data.salesObject, 'NO_PAYMENT_MADE', rws[0].store_number], (error, results) => {
+                                            if (error) {
+                                                console.log('Error==== ', error)
+                                                r.release()
+                                                r.query('ROLLBACK')
+                                                return res.status(201).json({ message: error })
+                                            } else {
+                                                if (results.rowCount > 0) {
+                                                    query = 'UPDATE tb_cashsale_invoices SET invoice_submitted=$1 WHERE invoice_number=$2'
+                                                    r.query(query, [true, data.invoceNumber], (error, results) => {
+                                                        if (error) {
+                                                            console.log(error)
+                                                            r.release()
+                                                            r.query('ROLLBACK')
+                                                        } else {
+                                                            if (results.rowCount > 0) {
+                                                                query = 'UPDATE  tb_cash_sales SET invoice_submitted=$1 WHERE invoice_number=$2'
+                                                                r.query(query, [true, data.invoceNumber], (error, results) => {
+                                                                    if (error) {
+                                                                        console.log(error)
+                                                                        r.release()
+                                                                        r.query('ROLLBACK')
+                                                                    } else {
+                                                                        if (results.rowCount > 0) {
+                                                                            query = 'DELETE FROM tb_cash_sale_temp WHERE invoice_number=$1'
+                                                                            r.query(query, [data.invoceNumber], (error, results) => {
+                                                                                if (error) {
+                                                                                    console.log(error)
+                                                                                    r.release()
+                                                                                    r.query('ROLLBACK')
+                                                                                } else {
+                                                                                    query = 'INSERT INTO tb_all_sales_invoices (sales_type,invoice_number,date_posted,auth) VALUES ($1,$2,$3,$4)'
+                                                                                    r.query(query, [data.salesObject, data.invoceNumber, new Date(), true], (error, results) => {
+                                                                                        if (error) {
+                                                                                            console.log(error)
+                                                                                            r.release()
+                                                                                            r.query('ROLLBACK')
+                                                                                        } else {
+                                                                                            r.release()
+                                                                                            r.query('COMMIT')
+                                                                                            return res.status(200).json({ success: 'Invoice submitted successfuly' })
+                                                                                        }
+                                                                                    });
+                                                                                }
+                                                                            });
                                                                         } else {
-                                                                            if (results.rowCount > 0) {
-                                                                                query = 'DELETE FROM tb_cash_sale_temp WHERE invoice_number=$1'
-                                                                                r.query(query, [data.invoceNumber], (error, results) => {
-                                                                                    if (error) {
-                                                                                        console.log(error)
-                                                                                        r.release()
-                                                                                        r.query('ROLLBACK')
-                                                                                    } else {
-                                                                                        query = 'INSERT INTO tb_all_sales_invoices (sales_type,invoice_number,date_posted,auth) VALUES ($1,$2,$3,$4)'
-                                                                                        r.query(query, [data.salesObject, data.invoceNumber, new Date(), true], (error, results) => {
-                                                                                            if (error) {
-                                                                                                console.log(error)
-                                                                                                r.release()
-                                                                                                r.query('ROLLBACK')
-                                                                                            } else {
-                                                                                                r.release()
-                                                                                                r.query('COMMIT')
-                                                                                                return res.status(200).json({ success: 'Invoice submitted successfuly' })
-                                                                                            }
-                                                                                        });
-                                                                                    }
-                                                                                });
-                                                                            } else {
-                                                                                res.release()
-                                                                                r.query('ROLLBACK')
-                                                                                return res.status(200).json({ message: 'Unable to update cashes sales tables' })
-                                                                            }
+                                                                            res.release()
+                                                                            r.query('ROLLBACK')
+                                                                            return res.status(200).json({ message: 'Unable to update cashes sales tables' })
                                                                         }
-                                                                    })
-                                                                } else {
-                                                                    res.release()
-                                                                    r.query('ROLLBACK')
-                                                                    return res.status(200).json({ message: 'Unable to close the invoice' })
-                                                                }
+                                                                    }
+                                                                })
+                                                            } else {
+                                                                res.release()
+                                                                r.query('ROLLBACK')
+                                                                return res.status(200).json({ message: 'Unable to close the invoice' })
                                                             }
-                                                        })
-                                                    }
+                                                        }
+                                                    })
                                                 }
-                                            })
-                                            counter++
-                                        }
+                                            }
+                                        })
+
 
 
                                     }
@@ -862,7 +862,7 @@ router.post('/AddcreditCart', cors({ origin: '*' }), async (req, res) => {
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
     await pool.connect().then(async (r) => {
-        console.log('Credit temp',data)
+        console.log('Credit temp', data)
         if (r._connected) {
             try {
                 query = 'SELECT invoice_number FROM tb_credit_sale_invoice WHERE invoice_number=$1 '
@@ -874,7 +874,7 @@ router.post('/AddcreditCart', cors({ origin: '*' }), async (req, res) => {
                     } else {
                         if (results.rows.length > 0) {
                             query = "INSERT INTO tb_credit_saletemp(invoice_number,productid,brand,quantity,unitprice,totalcost,purchaseid,customertype,store_number,sales_type)VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)"
-                            r.query(query, [data.invoiceNumber, data.productId, data.brandId, data.quantity, data.uniPrice, data.quantity * data.uniPrice, data.purchaseId, data.customerType, data.storeNumber,data.salesObject], (error, results) => {
+                            r.query(query, [data.invoiceNumber, data.productId, data.brandId, data.quantity, data.uniPrice, data.quantity * data.uniPrice, data.purchaseId, data.customerType, data.storeNumber, data.salesObject], (error, results) => {
                                 if (error) {
                                     console.log(error)
                                     r.release()
@@ -935,8 +935,8 @@ router.post('/opencreditInvoice', cors({ origin: '*' }), async (req, res) => {
                             r.release()
                             res.status(200).json({ message: 'Invoice Already registered' })
                         } else {
-                            query = "INSERT INTO tb_credit_sale_invoice(invoice_number, dateposted, customername, emailaddress, address, customertype,telephone,customerid)VALUES($1,$2,$3,$4,$5,$6,$7,$8)"
-                            r.query(query, [data.invoiceNumber, data.dateposted, data.customername, data.emailadress, data.addresss, data.customerType, data.telephone, data.cutomerNumber], (error, results) => {
+                            query = "INSERT INTO tb_credit_sale_invoice(invoice_number, dateposted, customername, emailaddress, address, customertype,telephone,customerid,preparedby)VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)"
+                            r.query(query, [data.invoiceNumber, data.dateposted, data.customername, data.emailadress, data.addresss, data.customerType, data.telephone, data.cutomerNumber, data.preparedBy], (error, results) => {
                                 if (error) {
                                     console.log(error)
                                     r.release()
@@ -1928,5 +1928,179 @@ router.post('/loadCreditPaymentReceipt', cors({ origin: '*' }), async (req, res)
         }
     })
 })
+
+
+
+
+router.post('/prepared_cash_invoices', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    await pool.connect().then(async (r) => {
+        let data = req.body
+        //    console.log(data)
+        if (r._connected) {
+
+            const customOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
+            let formattedDate = new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated)
+            console.log();
+            try {
+                query = "SELECT tb_cashsale_invoices.invoice_number,tb_cashsale_invoices.dateposted,tb_cashsale_invoices.isinvoice_verified,tb_cashsale_invoices.customername,tb_cashsale_invoices.telephone,tb_cashsale_invoices.emailadress,tb_cashsale_invoices.address,tb_cashsale_invoices.invoice_submitted,tb_cashsale_invoices.customertype,tb_cashsale_invoices.customerid,tb_cashsale_invoices.preparedby,invoice_summaries.is_payment_complete " +
+                    " FROM tb_cashsale_invoices LEFT JOIN invoice_summaries ON tb_cashsale_invoices.invoice_number=invoice_summaries.invoice_number  WHERE  tb_cashsale_invoices.dateposted=$1"
+
+                r.query(query, [formattedDate], (error, results) => {
+                    if (error) {
+                        r.release()
+                        console.log(error)
+                        return res.status(201).json({ message: error })
+                    } else {
+                        if (results.rows.length > 0) {
+                            console.log(results.rows)
+                            r.release()
+                            return res.status(200).json({ data: results.rows })
+                        } else {
+                            r.release()
+                            console.log('no invoice found')
+                            res.status(201).json({ message: 'No invoice today' })
+                        }
+                    }
+                })
+
+            } catch (error) {
+                r.release()
+                return res.status(201).json({ message: error })
+                console.log(error)
+            }
+        } else {
+            r.release()
+            console.log('Database connection failed')
+            return res.status(201).json({ message: 'Database Connection failed' })
+        }
+    })
+})
+
+
+
+router.post('/prepared_credit_invoices', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    await pool.connect().then(async (r) => {
+        let data = req.body
+        //    console.log(data)
+        if (r._connected) {
+
+            const customOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
+            let formattedDate = new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated)
+            console.log(new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated));
+            try {
+                query = "SELECT tb_credit_sale_invoice.invoice_number,tb_credit_sale_invoice.dateposted, tb_credit_sale_invoice.isinvoice_verified, tb_credit_sale_invoice.customername, tb_credit_sale_invoice.telephone, tb_credit_sale_invoice.emailaddress, tb_credit_sale_invoice.address, tb_credit_sale_invoice.invoice_submitted, tb_credit_sale_invoice.customertype, tb_credit_sale_invoice.customerid, tb_credit_sale_invoice.preparedby, tb_credit_invoice_summary.is_payment_complete" +
+                    " FROM tb_credit_sale_invoice LEFT JOIN tb_credit_invoice_summary  ON tb_credit_sale_invoice.invoice_number=tb_credit_invoice_summary.invoice_number  WHERE  tb_credit_sale_invoice.dateposted=$1"
+
+                r.query(query, [formattedDate], (error, results) => {
+                    if (error) {
+                        r.release()
+                        console.log(error)
+                        return res.status(201).json({ message: error })
+                    } else {
+                        if (results.rows.length > 0) {
+                            console.log(results.rows)
+                            r.release()
+                            return res.status(200).json({ data: results.rows })
+                        } else {
+                            r.release()
+                            console.log('no invoice found')
+                            res.status(201).json({ message: 'No invoice today' })
+                        }
+                    }
+                })
+
+            } catch (error) {
+                r.release()
+                return res.status(201).json({ message: error })
+                console.log(error)
+            }
+        } else {
+            r.release()
+            console.log('Database connection failed')
+            return res.status(201).json({ message: 'Database Connection failed' })
+        }
+    })
+})
+
+
+
+
+
+router.post('/join_credit_cash_salse', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    await pool.connect().then(async (r) => {
+        let data = req.body
+        //    console.log(data)
+        if (r._connected) {
+
+            const customOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
+            let formattedDate = new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated)
+            console.log(new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated));
+            try {
+                query = `SELECT 
+                            ca.invoice_number, ca.product_number, ca.purchaseid, ca.product_brand, 
+                            ca.quantity_sold, ca.unit_price, ca.total_price, ca.dateposted,  
+                            ca.isinvoice_verified, ca.isinvoice_paid, ca.datepaid, 
+                            ca.invoice_submitted, ca.store_number, ca.store_verified,
+                            st.storename, p.name, br.title 
+                        FROM tb_cash_sales ca
+                        LEFT JOIN stores st ON st.storenumber = ca.store_number
+                        LEFT JOIN products p ON p.serialnumber = ca.product_number
+                        LEFT JOIN productbrand br ON br.brandid = ca.product_brand 
+                        WHERE ca.dateposted = $1  
+
+                        UNION
+
+                        SELECT 
+                            cr.invoice_number, cr.product_number, cr.purchaseid, cr.product_brand, 
+                            cr.quantity_sold, cr.unit_price, cr.total_price, cr.dateposted,  
+                            cr.isinvoice_verified, cr.isinvoice_paid, cr.datepaid, 
+                            cr.invoice_submitted, cr.store_number, cr.store_verified,
+                            st.storename, p.name, br.title 
+                        FROM tb_credit_sales cr 
+                        LEFT JOIN stores st ON st.storenumber = cr.store_number 
+                        LEFT JOIN products p ON p.serialnumber = cr.product_number
+                        LEFT JOIN productbrand br ON br.brandid = cr.product_brand 
+                        WHERE cr.dateposted = $1; `;
+
+                r.query(query, [formattedDate], (error, results) => {
+                    if (error) {
+                        r.release()
+                        console.log(error)
+                        return res.status(201).json({ message: error })
+                    } else {
+                        if (results.rows.length > 0) {
+                            console.log(results.rows)
+                            r.release()
+                            return res.status(200).json({ data: results.rows })
+                        } else {
+                            r.release()
+                            console.log('no invoice found')
+                            res.status(201).json({ message: 'No invoice today' })
+                        }
+                    }
+                })
+
+            } catch (error) {
+                r.release()
+                return res.status(201).json({ message: error })
+                console.log(error)
+            }
+        } else {
+            r.release()
+            console.log('Database connection failed')
+            return res.status(201).json({ message: 'Database Connection failed' })
+        }
+    })
+})
+
 
 module.exports = router
