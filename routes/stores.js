@@ -351,11 +351,6 @@ router.post('/poststocksummeries', cors({ origin: '*' }), async (req, res) => {
                                             r.release();
                                             return res.status(201).json({ message: error.detail })
                                         } else {
-
-
-
-
-
                                             query = "SELECT product_number,product_brand,store_number,avaible_quantity,quantity_sold,stock_balance,is_current,date_posted " +
                                                 " FROM  tb_daily_rotating_Stock WHERE  is_current=$1 AND store_number=$2 AND product_number=$3 AND product_brand=$4"
 
@@ -495,7 +490,7 @@ router.post('/pushProductToStore', cors({ origin: '*' }), async (req, res) => {
         if (r._connected) {
             r.query('BEGIN');
             query = 'SELECT product_number FROM store_products WHERE product_number=$1'
-            r.query(query, [data.productid], (error, results) => {
+            r.query(query, [data.product_number], (error, results) => {
                 if (error) {
                     console.log("The error ", error)
                     r.release();
@@ -506,9 +501,9 @@ router.post('/pushProductToStore', cors({ origin: '*' }), async (req, res) => {
                         r.release();
                         return res.status(201).json({ message: 'The selected product object has already been created. Use add stock option to stock the product ' })
                     } else {
-                        query = "INSERT INTO store_products(product_number, store_type, product_category,date_created, details, isopened, store_number,stock_number)VALUES($1,$2,$3,$4,$5,$6,$7,$8)"
+                        query = "INSERT INTO store_products(product_number, product_category,date_created, isopened, store_number,stock_number)VALUES($1,$2,$3,$4,$5,$6)"
 
-                        r.query(query, [data.product_number, data.storetype, data.product_category, data.date_created, data.details, data.isopened, data.store_Number, data.store_stock_id], (error, results) => {
+                        r.query(query, [data.product_number, data.product_category, data.date_created, data.isopened, data.store_Number, data.store_stock_id], (error, results) => {
 
                             if (error) {
                                 console.log("The error ", error)
@@ -518,6 +513,7 @@ router.post('/pushProductToStore', cors({ origin: '*' }), async (req, res) => {
 
                                 if (results.rowCount > 0) {
                                     r.query('COMMIT');
+                                    console.log('Success')
                                     r.release()
                                     return res.status(200).json({ success: 'Request complete' })
 
@@ -552,15 +548,89 @@ router.post('/listAllProducts', cors({ origin: '*' }), async (req, res) => {
 
     await pool.connect().then(async (r) => {
         if (r._connected) {
-            query = 'SELECT  store_products.product_number, store_products.store_type, store_products.product_category, store_products.date_created, store_products.details, store_products.isopened, store_products.store_number, products.name  FROM store_products LEFT JOIN products ON   store_products.product_number=products.serialnumber  WHERE store_number=$1 '
-            console.log('the data', data)
-            r.query(query, [data.storeNumber], (error, results) => {
+            if (data.storeNumber) {
+                query = 'SELECT  store_products.product_number, store_products.product_category, store_products.date_created, store_products.isopened, store_products.store_number, products.name  FROM store_products LEFT JOIN products ON   store_products.product_number=products.serialnumber  WHERE store_number=$1 '
+                console.log('the data', data)
+                r.query(query, [data.storeNumber], (error, results) => {
+                    if (error) {
+                        console.log("The error ", error)
+                        r.release();
+                        return res.status(201).json({ message: error.detail })
+                    } else {
+                        if (results.rows.length > 0) {
+                            return res.status(200).json({ data: results.rows })
+                            r.release();
+
+                        } else {
+                            r.release();
+                            return res.status(201).json({ message: 'Products are not yet mounted for this sotre' })
+                        }
+                    }
+                })
+
+            } else {
+                query = 'SELECT  products.serialnumber, products.name, products.category,products.imageurl,prodcart.category_name FROM products LEFT JOIN prodcart ON products.category=prodcart.serialnumber  '
+                console.log('the data', data)
+                r.query(query, (error, results) => {
+                    if (error) {
+                        console.log("The error ", error)
+                        r.release();
+                        return res.status(201).json({ message: error.detail })
+                    } else {
+                        if (results.rows.length > 0) {
+                            console.log(results.rows)
+                            return res.status(200).json({ data: results.rows })
+                            r.release();
+
+                        } else {
+                            r.release();
+                            return res.status(201).json({ message: 'Products are not yet mounted for this sotre' })
+                        }
+                    }
+                })
+
+            }
+
+        } else {
+            r.release();
+            return res.status(201).json({ message: "Unable to connection to the Database" })
+        }
+    })
+})
+
+
+
+
+
+
+router.post('/liststoreproduct', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+
+            query = `SELECT  store_products.product_number,
+                  store_products.product_category,
+                   store_products.date_created,
+                    store_products.isopened,
+                     store_products.store_number,
+                      products.name,productbrand.title,productbrand.brandid,productbrand.imageurl
+                        FROM 
+                        store_products LEFT JOIN products ON 
+                          store_products.product_number=products.serialnumber LEFT JOIN productbrand ON
+                           store_products.product_number=productbrand.productid WHERE store_products.store_number=$1 `
+
+            r.query(query, [data.store_number], (error, results) => {
                 if (error) {
                     console.log("The error ", error)
                     r.release();
                     return res.status(201).json({ message: error.detail })
                 } else {
                     if (results.rows.length > 0) {
+                        console.log('Store Product', results.rows)
                         return res.status(200).json({ data: results.rows })
                         r.release();
 
@@ -571,12 +641,15 @@ router.post('/listAllProducts', cors({ origin: '*' }), async (req, res) => {
                 }
             })
 
+
         } else {
             r.release();
             return res.status(201).json({ message: "Unable to connection to the Database" })
         }
     })
 })
+
+
 
 
 
@@ -1867,7 +1940,7 @@ router.post('/loadUnsubmitted', cors({ origin: '*' }), async (req, res) => {
                 } else {
                     if (results?.rows.length > 0) {
                         const req_nos = results.rows
-                        console.log('Unsubmiited info',req_nos)
+                        console.log('Unsubmiited info', req_nos)
                         query = 'SELECT store_stocK_request.product_number, store_stocK_request.brand_number, store_stocK_request.cartegory, store_stocK_request.request_number, store_stocK_request.quantity, store_stocK_request.store_number, store_stocK_request.date_resquested, ' +
                             'store_stocK_request.is_submitted, store_stocK_request.request_approved, store_stocK_request.date_approved, store_stocK_request.description,store_stocK_request.itemrowid,' +
                             'products.name, productbrand.title FROM store_stocK_request LEFT JOIN products ON store_stocK_request.product_number=products.serialnumber LEFT JOIN productbrand ON store_stocK_request.brand_number=productbrand.brandid WHERE store_stocK_request.store_number=$1 AND store_stocK_request.is_submitted=$2'
@@ -1880,7 +1953,7 @@ router.post('/loadUnsubmitted', cors({ origin: '*' }), async (req, res) => {
                                 if (results.rows.length > 0) {
                                     let u = results.rows
                                     r.release();
-                                    return res.status(200).json({ data: u, req_nos:req_nos })
+                                    return res.status(200).json({ data: u, req_nos: req_nos })
 
                                 } else {
                                     r.release();
@@ -1891,8 +1964,8 @@ router.post('/loadUnsubmitted', cors({ origin: '*' }), async (req, res) => {
                         })
 
                     } else {
-                           r.release();
-            return res.status(201).json({ message: "No pending unsubmitted available" })
+                        r.release();
+                        return res.status(201).json({ message: "No pending unsubmitted available" })
                     }
                 }
             })
@@ -1926,11 +1999,11 @@ router.post('/requestHistory', cors({ origin: '*' }), async (req, res) => {
                     r.release();
                     return res.status(201).json({ message: error.detail })
                 } else {
-                 console.log(results.rows)
+                    console.log(results.rows)
                     if (results.rows.length > 0) {
-                    
+
                         r.release();
-                        return res.status(200).json({ data:results.rows })
+                        return res.status(200).json({ data: results.rows })
                     } else {
                         r.release();
                         console.log('Not found')
@@ -2092,7 +2165,7 @@ router.post('/findPendingItem', cors({ origin: '*' }), async (req, res) => {
                 'store_stocK_request.is_submitted, store_stocK_request.request_approved, store_stocK_request.date_approved, store_stocK_request.description,store_stocK_request.itemrowid,warehouse.warehousename,store_stock_request.warehouse_number,' +
                 'products.name, productbrand.title FROM store_stocK_request LEFT JOIN products ON store_stocK_request.product_number=products.serialnumber LEFT JOIN productbrand ON ' +
                 ' store_stocK_request.brand_number=productbrand.brandid LEFT JOIN warehouse ON store_stock_request.warehouse_number=warehouse.whse_serialnumber WHERE store_stocK_request.store_number=$1 AND store_stocK_request.request_number=$2 AND store_stocK_request.is_submitted=$3 AND store_stocK_request.request_approved=$4 '
-            r.query(query, [data.store_number, data.request_number,true,false], (error, results) => {
+            r.query(query, [data.store_number, data.request_number, true, false], (error, results) => {
                 if (error) {
                     console.log(error)
                     r.release();
@@ -2255,14 +2328,14 @@ router.post('/loadtransactions', cors({ origin: '*' }), async (req, res) => {
     await pool.connect().then(async (r) => {
         if (r._connected) {
             query = 'SELECT tb_daily_rotating_stock.product_number, tb_daily_rotating_stock.product_brand, tb_daily_rotating_stock.store_number, tb_daily_rotating_stock.avaible_quantity, tb_daily_rotating_stock.quantity_sold, tb_daily_rotating_stock.stock_balance, tb_daily_rotating_stock.is_current, tb_daily_rotating_stock.date_posted, tb_daily_rotating_stock.new_quantity, products.name, productbrand.title,productbrand.imageurl FROM tb_daily_rotating_stock LEFT JOIN products ON tb_daily_rotating_stock.product_number=products.serialnumber LEFT JOIN productbrand ON tb_daily_rotating_stock.product_brand=productbrand.brandid WHERE tb_daily_rotating_stock.store_number=$1 AND tb_daily_rotating_stock.product_brand=$2 AND tb_daily_rotating_stock.product_number=$3 '
-            r.query(query, [data.store_number, data.product_brand,data.product_number], (error, results) => {
+            r.query(query, [data.store_number, data.product_brand, data.product_number], (error, results) => {
                 if (error) {
                     console.log(error)
                     r.release();
                     return res.status(201).json({ message: error.detail })
                 } else {
                     if (results.rows.length > 0) {
-                        console.log('The data: ',results.rows)
+                        console.log('The data: ', results.rows)
                         r.release();
                         return res.status(200).json({ data: results.rows })
 
@@ -2280,6 +2353,76 @@ router.post('/loadtransactions', cors({ origin: '*' }), async (req, res) => {
         }
     })
 })
+
+
+
+
+
+
+router.post('/from_storemanager_to_Store', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+                        query = 'INSERT INTO store_received_stock(stock_to_storeid, stockoperationid, from_warehouse_id, store_id, received_productid, store_request_id, quantity_requested,quantity_received, date_received, received_details, approve_receipt, warehouse_stock_id, received_brand)VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *;'
+                        r.query(query, [data.stock_to_storeid, data.stockoperationid, data.warehouseNumber, data.store_id, data.stockedSelectedProduct, data.store_request_id, 0, data.drawal_quantity, new Date(), data.comments, false, data.warehouse_stock_id, data.withdrwanbrand], (error, results) => {
+                            if (error) {
+                                console.log(error)
+                                  r.release()
+                                return res.status(201).json({ message: error })
+                            } else {
+                                if (results.rows.length> 0) {
+                                    console.log(results.rows)
+                                    r.query('COMMIT')
+                                      r.release()
+                                    return res.status(200).json({ success: 'Approval Successful' })
+                                } else {
+                                    console.log("AN ERROR HAS OCCURED")
+                                    r.query('ROLLBACK')
+                                    
+                                    r.release()
+                                    return res.status(201).json({ messafe: 'An error occured while updating the store receved request' })
+                                }
+                            }
+                        })
+                    
+                }
+            })
+})
+ 
+router.post('/dropPush', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    await pool.connect().then(async (r) => {
+    console.log(data)
+        if (r._connected) {
+                        query = 'DELETE FROM  store_received_stock WHERE store_id=$1 AND received_productid=$2 AND  received_brand=$3 '
+                        r.query(query, [data.store_number,data.product_number,data.brandid ], (error, results) => {
+                            if (error) {
+                                console.log(error)
+                                  r.release()
+                                return res.status(201).json({ message: error })
+                            } else {
+                                if (results.rowCount> 0) {
+                                console.log('delete success')
+                                  r.release()
+                                    return res.status(200).json({ success: 'Approval Successful' })
+                                } else {
+                                    console.log("AN ERROR HAS OCCURED")
+                                    r.release()
+                                    return res.status(201).json({ message: 'An error occured while updating the store receved request' })
+                                }
+                            }
+                        })
+                    
+                }
+            })
+})
+
 
 
 module.exports = router

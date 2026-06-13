@@ -156,7 +156,7 @@ router.post('/submit_profoma_Invoice', cors({ origin: '*' }), async (req, res) =
                             r.release()
                             res.status(200).json({ message: 'Invoice Already registered' })
                         } else {
-                            query = "INSERT INTO tb_profoma_invoices(invoice_number, dateposted, customername, emailadress, addresss, customertype,telephone,cutomerid)VALUES($1,$2,$3,$4,$5,$6,$7,$8)"
+                            query = "INSERT INTO tb_profoma_invoices(invoice_number, dateposted, customername, emailaddress, addresss, customertype,telephone,cutomerid)VALUES($1,$2,$3,$4,$5,$6,$7,$8)"
                             r.query(query, [data.invoiceNumber, data.dateposted, data.customername, data.emailadress, data.addresss, data.customerType, data.telephone, data.cutomerNumber], (error, results) => {
                                 if (error) {
                                     console.log(error)
