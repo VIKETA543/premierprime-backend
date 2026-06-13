@@ -263,7 +263,7 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
             if (oldPassword.rows.length > 0) {
                 const foundPassword = oldPassword.rows[0].u_passward
                 console.log('found password', foundPassword)
-
+                  console.log('Supplied password', data.password)
                 const isMatch = await bcrypt.compare(data.password, foundPassword);
                 if (isMatch) {
                         console.log('Password Match')
