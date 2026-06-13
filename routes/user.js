@@ -255,7 +255,7 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
         if (checkResult.rows.length > 0) {
             //   console.log('email correct',checkResult.rows)
             const saveUac = checkResult.rows[0].uac_id
-             console.log('uac', saveUac)
+             console.log('uacid:=>', saveUac)
             const findPasswordquery = 'SELECT u_passward FROM tb_auth WHERE uac_id=$1';
             const oldPassword = await client.query(findPasswordquery, [saveUac])
 
