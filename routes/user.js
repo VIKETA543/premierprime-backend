@@ -263,8 +263,8 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
                 const foundPassword = oldPassword.rows[0].u_passward
                 console.log('found password', foundPassword)
                   console.log('Supplied password', data.password)
-                const isMatch = await bcrypt.compare(data.password, foundPassword);
-                if (isMatch) {
+                // const isMatch = await bcrypt.compare(data.password, foundPassword);
+                // if (isMatch) {
                         console.log('Password Match')
                     query = 'SELECT hook_number FROM uacp WHERE uac_id=$1'
                     client.query(query, [saveUac], (error, results) => {
@@ -303,10 +303,10 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
                                 })
 
 
-                            } else {
-                                console.log('Your role could not be verified. Verify if you are authorise to login')
-                                return res.status(201).json({ message: 'Your role could not be verified. Verify if you are authorise to login' })
-                            }
+                            // } else {
+                            //     console.log('Your role could not be verified. Verify if you are authorise to login')
+                            //     return res.status(201).json({ message: 'Your role could not be verified. Verify if you are authorise to login' })
+                            // }
                         }
                     })
 
