@@ -10,7 +10,6 @@ const bcrypt = require('bcrypt');
 
 
 
-
 router.post('/signup', cors({ origin: '*' }), async (req, res) => {
 
     res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
@@ -256,7 +255,7 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
         if (checkResult.rows.length > 0) {
             //   console.log('email correct',checkResult.rows)
             const saveUac = checkResult.rows[0].uac_id
-            // console.log('uac', checkResult.rows)
+             console.log('uac', checkResult)
             const findPasswordquery = 'SELECT u_passward FROM tb_auth WHERE uac_id=$1';
             const oldPassword = await client.query(findPasswordquery, [saveUac])
 
