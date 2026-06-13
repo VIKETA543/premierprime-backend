@@ -266,7 +266,7 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
 
                 const isMatch = await bcrypt.compare(data.password, foundPassword);
                 if (isMatch) {
-
+                        console.log('Password Match')
                     query = 'SELECT hook_number FROM uacp WHERE uac_id=$1'
                     client.query(query, [saveUac], (error, results) => {
                         if (error) {
@@ -281,8 +281,8 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
                                 client.query(query, [saveUac], (error, results) => {
                                     if (error) {
                                         console.log(error);
-                                        return res.status(201).json({ message: '"Invalid password. Your password cannot be found in the database"' })
-                                        console.log(error.detail);
+                                        return res.status(201).json({ message: error })
+                                        console.log(error);
                                     } else {
                                         if (results.rows.length > 0) {
                                             const approval = results.rows[0].approved
@@ -313,6 +313,7 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
 
 
                 } else {
+                    console.log("Password does not match")
                     return res.status(201).json({ message: '"Invalid password. Your password cannot be found in the database"' })
                     console.log("Invalid password. Your password cannot be found in the database");
                 }
