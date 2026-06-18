@@ -270,7 +270,7 @@ router.post('/verify_invoice', cors({ origin: '*' }), async (req, res) => {
                                                 } else {
 
                                                     if (results.rows.length > 0) {
-                                                        console.log('The invoice Data: =>',invoiceData)
+                                                        console.log('The invoice Data: =>', invoiceData)
                                                         r.release()
                                                         return res.status(200).json({ data: rws, sumtotal: results.rows, invoice: invoiceData })
                                                     } else {
@@ -345,7 +345,7 @@ router.post('/verify_credit_invoice', cors({ origin: '*' }), async (req, res) =>
                                 query = "SELECT tb_credit_sales.invoice_number, tb_credit_sales.purchaseid, tb_credit_sales.product_number, tb_credit_sales.product_brand, tb_credit_sales.quantity_sold, tb_credit_sales.unit_price, tb_credit_sales.total_price, productbrand.title, products.name, stores.storename FROM tb_credit_sales LEFT JOIN  products ON  tb_credit_sales.product_number=products.serialnumber LEFT JOIN productbrand ON tb_credit_sales.product_brand=productbrand.brandid LEFT JOIN stores ON tb_credit_sales.store_number=stores.storenumber  WHERE tb_credit_sales.invoice_number=$1  "
                                 r.query(query, [data.invoceNumber], (error, results) => {
                                     if (error) {
-                                        r.release()   
+                                        r.release()
                                         console.log(error)
                                         return res.status(201).json({ message: error })
                                     } else {
@@ -360,7 +360,7 @@ router.post('/verify_credit_invoice', cors({ origin: '*' }), async (req, res) =>
                                                 } else {
 
                                                     if (results.rows.length > 0) {
-                                                        console.log('The invoice Data: =>',invoiceData)
+                                                        console.log('The invoice Data: =>', invoiceData)
                                                         r.release()
                                                         return res.status(200).json({ data: rws, sumtotal: results.rows, invoice: invoiceData })
                                                     } else {
@@ -831,7 +831,7 @@ router.post('/submitInvoice', cors({ origin: '*' }), async (req, res) => {
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
     await pool.connect().then(async (r) => {
-
+        console.log('Inserting into cache sales invoices')
         if (r._connected) {
             try {
                 query = "SELECT invoice_number,productid,brand,quantity,unitprice,purchaseid,customertype,totalcost,store_number,sales_type FROM tb_cash_sale_temp WHERE invoice_number = $1"
@@ -848,9 +848,29 @@ router.post('/submitInvoice', cors({ origin: '*' }), async (req, res) => {
                             var counter = 0
                             r.query('BEGIN')
                             while (counter < rws.length) {
-                                console.log('Inserting into cache sales invoices')
-                                query = 'INSERT INTO  tb_cash_sales(invoice_number,product_number,purchaseid,product_brand,quantity_sold,unit_price,total_price,dateposted,store_number)VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)'
-                                r.query(query, [rws[counter].invoice_number, rws[counter].productid, rws[counter].purchaseid, rws[counter].brand, rws[counter].quantity, rws[counter].unitprice, rws[counter].totalcost, new Date(), rws[counter].store_number], (error, results) => {
+
+                                query = `INSERT INTO  tb_cash_sales(
+                                invoice_number,
+                                product_number,
+                                purchaseid,
+                                product_brand,
+                                quantity_sold,
+                                unit_price,
+                                total_price,
+                                dateposted,
+                                store_number
+                                )VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`
+                                r.query(query, [rws[
+                                    counter].invoice_number,
+                                rws[counter].productid,
+                                rws[counter].purchaseid,
+                                rws[counter].brand,
+                                rws[counter].quantity,
+                                rws[counter].unitprice,
+                                rws[counter].totalcost,
+                                new Date(),
+                                rws[counter].store_number
+                                ], (error, results) => {
                                     if (error) {
                                         r.query('ROLLBACK')
                                         console.log(error)
@@ -1156,33 +1176,53 @@ router.post('/submitcreditInvoice', cors({ origin: '*' }), async (req, res) => {
 
         if (r._connected) {
             try {
-                query = "SELECT invoice_number,productid,brand,quantity,unitprice,purchaseid,customertype,totalcost  FROM tb_credit_saletemp WHERE invoice_number = $1"
+                query = "SELECT invoice_number,productid,brand,quantity,unitprice,purchaseid,customertype,totalcost,store_number  FROM tb_credit_saletemp WHERE invoice_number = $1"
                 r.query(query, [data.invoceNumber], (error, results) => {
                     if (error) {
                         console.log(error)
                         r.release()
                         return res.status(201).json({ message: error })
                     } else {
-                        console.log(results.rows)
+
                         if (results.rows.length > 0) {
                             const rws = results.rows
 
                             var counter = 0
                             r.query('BEGIN')
                             while (counter < rws.length) {
-                                query = 'INSERT INTO  tb_credit_sales(invoice_number,product_number,purchaseid,product_brand,quantity_sold,unit_price,total_price,dateposted)VALUES($1,$2,$3,$4,$5,$6,$7,$8)'
-                                r.query(query, [rws[counter].invoice_number, rws[counter].productid, rws[counter].purchaseid, rws[counter].brand, rws[counter].quantity, rws[counter].unitprice, rws[counter].totalcost, new Date()], (error, results) => {
-                                    if (error) {
-                                        r.query('ROLLBACK')
-                                        console.log(error)
-                                        return res.status(201).json({ message: error })
-                                    } else {
-                                        if (counter === rws.length) {
-                                            // sumInvoiceTotal = sumInvoiceTotal + rws[counter].totalcost
-                                            // console.log(rws[counter].totalcost)
+                                console.log('Inserting into credit sales')
+                                query = `INSERT INTO  tb_credit_sales(
+                                invoice_number,
+                                product_number,
+                                purchaseid,
+                                product_brand,
+                                quantity_sold,
+                                unit_price,
+                                total_price,
+                                dateposted,
+                                store_number
+                                )VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`
+                                r.query(query, [
+                                    rws[counter].invoice_number,
+                                    rws[counter].productid,
+                                    rws[counter].purchaseid,
+                                    rws[counter].brand,
+                                    rws[counter].quantity,
+                                    rws[counter].unitprice,
+                                    rws[counter].totalcost,
+                                    new Date(),
+                                    rws[counter].store_number], (error, results) => {
+                                        if (error) {
+                                            r.query('ROLLBACK')
+                                            console.log(error)
+                                            return res.status(201).json({ message: error })
+                                        } else {
+                                            if (counter === rws.length) {
+                                                // sumInvoiceTotal = sumInvoiceTotal + rws[counter].totalcost
+                                                // console.log(rws[counter].totalcost)
+                                            }
                                         }
-                                    }
-                                })
+                                    })
                                 counter++
                             }
                             query = 'SELECT invoice_number FROM tb_credit_invoice_summary WHERE invoice_number=$1'
@@ -1199,8 +1239,8 @@ router.post('/submitcreditInvoice', cors({ origin: '*' }), async (req, res) => {
                                         r.query('ROLLBACK')
                                         return res.status(200).json({ message: 'Invoice already submitted' })
                                     } else {
-                                        query = 'INSERT INTO tb_credit_invoice_summary(invoice_number,invoice_total,dateposted,payment_progress)VALUES($1,$2,$3,$4)'
-                                        r.query(query, [data.invoceNumber, data.sumInvoiceTotal, new Date(), 'NO_PAYMENT_MADE'], (error, results) => {
+                                        query = 'INSERT INTO tb_credit_invoice_summary(invoice_number,invoice_total,dateposted,payment_progress,sales_type,store_number)VALUES($1,$2,$3,$4,$5,$6)'
+                                        r.query(query, [data.invoceNumber, data.sumInvoiceTotal, new Date(), 'NO_PAYMENT_MADE', data.salesObject, data.store_number], (error, results) => {
                                             if (error) {
                                                 console.log(error)
                                                 r.release()
@@ -1318,7 +1358,7 @@ router.post('/loadInvoiceQuote', cors({ origin: '*' }), async (req, res) => {
                             console.log('Sales type', rws)
                             switch (rws) {
                                 case "CASH_SALES":
-                                 
+
                                     query = "SELECT invoice_summaries.invoice_number,invoice_summaries.payment_progress, invoice_summaries.invoice_total,invoice_summaries.dateposted, invoice_summaries.isinvoice_verified, invoice_summaries.sales_type," +
                                         "  tb_cashsale_invoices.customername, tb_cashsale_invoices.telephone, tb_cashsale_invoices.emailadress, tb_cashsale_invoices.address " +
                                         " FROM invoice_summaries LEFT JOIN tb_cashsale_invoices ON invoice_summaries.invoice_number = tb_cashsale_invoices.invoice_number WHERE invoice_summaries.invoice_number=$1  "
@@ -1347,7 +1387,7 @@ router.post('/loadInvoiceQuote', cors({ origin: '*' }), async (req, res) => {
                                                                 } else {
                                                                     if (results.rows.length > 0) {
                                                                         r.release()
-                                                                                 console.log('Loading cashe sales...............')
+                                                                        console.log('Loading cashe sales...............')
                                                                         res.status(200).json({ invoicesum, invoiceitems, rws, balance: results.rows, isQuote: true })
                                                                     } else {
                                                                         r.release()
@@ -1469,8 +1509,8 @@ router.post('/makePayment', cors({ origin: '*' }), async (req, res) => {
                                 return res.status(201).json({ message: error })
                             } else {
                                 if (results.rowCount > 0) {
-                                    query = "UPDATE tb_cash_sales  SET isinvoice_verified=$1 WHERE invoice_number=$2"
-                                    r.query(query, [true, data.invoinceNumber], (error, results) => {
+                                    query = "UPDATE tb_cash_sales  SET isinvoice_verified=$1,isinvoice_paid=$2 WHERE invoice_number=$3"
+                                    r.query(query, [true, data.balance > 0 ? true : false, data.invoinceNumber,], (error, results) => {
                                         if (error) {
                                             console.log(error)
                                             r.release()
