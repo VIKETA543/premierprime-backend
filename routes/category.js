@@ -14,21 +14,30 @@ router.get('/cartlist', cors({ origin: '*' }), async (req, res) => {
     res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    console.log('Data', data)
     await pool.connect().then(async (r) => {
+
         if (r._connected) {
             try {
-                const results = await r.query("SELECT serialnumber,category_name,description,image,date_updated,imageurl FROM prodcart")
-                let rs = results.rows
+                query = `SELECT serialnumber,category_name,description,image,date_updated,imageurl FROM prodcart `
+                await r.query(query, (error, results) => {
+                    if (error) {
+                        console.log(error)
+                        console.log("NO FOUND CAT activity")
+                        return res.status(200).json({ message: error.detail })
+                    } else {
+                        if (results.rows.length > 0) {
+                            r.release()
+                            return res.status(200).json({ data: results.rows })
+                        } else {
+                            r.release()
+                            console.log("NO FOUND CAT activity")
+                            return res.status(200).json({ message: "No Activity" })
+                        }
+                    }
 
-                if (rs.length > 0) {
-                    //  console.log("Rows",rs)
-                    r.release()
-                    return res.status(200).json({ data: results.rows })
-                } else {
-                    r.release()
-                    console.log("NO FOUND CAT activity")
-                    return res.status(200).json({ message: "No Activity" })
-                }
+                })
             } catch (error) {
                 console.log(error)
                 r.release()
@@ -41,6 +50,53 @@ router.get('/cartlist', cors({ origin: '*' }), async (req, res) => {
 
     })
 })
+
+
+
+router.post('/categoryListByStore', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    console.log('Data', data)
+    await pool.connect().then(async (r) => {
+
+        if (r._connected) {
+            try {
+                query = `SELECT serialnumber,category_name,description,image,date_updated,imageurl FROM prodcart LEFT JOIN store_products ON store_products.product_category=prodcart.serialnumber WHERE store_products.store_number=$1`
+                await r.query(query, [data.store_number], (error, results) => {
+                    if (error) {
+                        console.log(error)
+               
+                        return res.status(200).json({ message: error.detail })
+                    } else {
+                        if (results.rows.length > 0) {
+                            r.release()
+                            console.log('cartegory list by store', results.rows )
+                            return res.status(200).json({ data: results.rows })
+                        } else {
+                            r.release()
+                 
+                            return res.status(200).json({ message: "No Activity" })
+                        }
+                    }
+
+                })
+            } catch (error) {
+                console.log(error)
+                r.release()
+                return res.status(200).json({ message: "Internal error occured" })
+            }
+        } else {
+            r.release()
+            return res.status(200).json({ message: "Connection failed" })
+        }
+
+    })
+})
+
+
+
 // const storage = multer.memoryStorage();
 
 const storage = multer.diskStorage({
