@@ -2566,6 +2566,72 @@ router.post('/join_credit_cash_sale', cors({ origin: '*' }), async (req, res) =>
 })
 
 
+router.post('/join_credit_cash_sale_store_unverified', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    await pool.connect().then(async (r) => {
+        let data = req.body
+        if (r._connected) {
+            const customOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
+            let formattedDate = new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated)
+            // console.log(new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated));
+            try {
+                query = `SELECT 
+                            ca.invoice_number, ca.product_number, ca.purchaseid, ca.product_brand, 
+                            ca.quantity_sold, ca.unit_price, ca.total_price, ca.dateposted,  
+                            ca.isinvoice_verified, ca.isinvoice_paid, ca.datepaid, 
+                            ca.invoice_submitted, ca.store_number, ca.store_verified,ca.item_issued,
+                          p.name, br.title, asi.sales_type,st.storename 
+                        FROM tb_cash_sales ca
+                        LEFT JOIN stores st ON  ca.store_number=st.storenumber 
+                        LEFT JOIN products p ON p.serialnumber = ca.product_number
+                        LEFT JOIN productbrand br ON br.brandid = ca.product_brand
+                        LEFT JOIN tb_all_sales_invoices asi ON ca.invoice_number=asi.invoice_number
+                        WHERE ca.dateposted = $1 AND ca.store_verified=$2  AND ca.store_number=$3
+                        UNION
+                        SELECT 
+                            cr.invoice_number, cr.product_number, cr.purchaseid, cr.product_brand, 
+                            cr.quantity_sold, cr.unit_price, cr.total_price, cr.dateposted,  
+                            cr.isinvoice_verified, cr.isinvoice_paid, cr.datepaid, 
+                            cr.invoice_submitted, cr.store_number, cr.store_verified,cr.item_issued,
+                            p.name, br.title, asi.sales_type,st.storename  
+                        FROM tb_credit_sales cr 
+                        LEFT JOIN stores st ON cr.store_number = st.storenumber 
+                        LEFT JOIN products p ON p.serialnumber = cr.product_number
+                        LEFT JOIN productbrand br ON br.brandid = cr.product_brand
+                        LEFT JOIN tb_all_sales_invoices asi ON cr.invoice_number=asi.invoice_number 
+                        WHERE cr.dateposted = $1 AND  cr.store_verified=$2  AND cr.store_number=$3 `;
+
+                r.query(query, [formattedDate, false, data.store_number], (error, results) => {
+                    if (error) {
+                        r.release()
+                        console.log(error)
+                        return res.status(201).json({ message: error })
+                    } else {
+                        if (results.rows.length > 0) {
+                            console.log('Prepared Credit Invoices', results.rows)
+                            r.release()
+                            return res.status(200).json({ data: results.rows })
+                        } else {
+                            r.release()
+                            res.status(201).json({ message: 'No invoice today' })
+                        }
+                    }
+                })
+
+            } catch (error) {
+                r.release()
+                return res.status(201).json({ message: error })
+                console.log(error)
+            }
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Database Connection failed' })
+        }
+    })
+})
+
 
 router.post('/prepared_cash_invoices', cors({ origin: '*' }), async (req, res) => {
     res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
@@ -2606,7 +2672,9 @@ router.post('/prepared_cash_invoices', cors({ origin: '*' }), async (req, res) =
                  FROM 
                  tb_cashsale_invoices
                   LEFT JOIN 
-                  invoice_summaries ON tb_cashsale_invoices.invoice_number=invoice_summaries.invoice_number  WHERE  tb_cashsale_invoices.dateposted=$1 AND tb_cashsale_invoices.invoice_number=$2`
+                  invoice_summaries ON 
+                  tb_cashsale_invoices.invoice_number=invoice_summaries.invoice_number 
+                   WHERE  tb_cashsale_invoices.dateposted=$1 AND tb_cashsale_invoices.invoice_number=$2`
                             console.log('The invoice', invoice_number)
                             r.query(query, [formattedDate, invoice_number], (error, results) => {
                                 if (error) {
@@ -2616,7 +2684,7 @@ router.post('/prepared_cash_invoices', cors({ origin: '*' }), async (req, res) =
                                 } else {
                                     if (results.rows.length > 0) {
                                         r.release()
-                                        console.log('Prepared invoices', results.rows)
+                                        console.log('Prepared invoices DATA', results.rows)
                                         return res.status(200).json({ data: results.rows })
                                     } else {
                                         r.release()
@@ -2936,6 +3004,57 @@ router.post('/loadstoreProducts', cors({ origin: '*' }), async (req, res) => {
 
 
 
+
+router.post('/editPrice', cors({ origin: '*' }), async (req, res) => {
+
+    let data = req.body
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    console.log('verify credit invoice', data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            try {
+                query = `SELECT store_products.product_number,store_products.product_category,store_products.isopened,store_products.store_number,
+                products.name,productbrand.title,productbrand.imageurl,productbrand.brandid FROM store_products
+                 LEFT JOIN products ON store_products.product_number=products.serialnumber
+                 LEFT JOIN productbrand ON products.serialnumber=productbrand.productid  WHERE store_products.store_number=$1 AND productbrand.brandid=$2`
+                r.query(query, [data.store_number,data.brandid], (error, results) => {
+                    if (error) {
+                        r.release()
+                        console.log(error)
+                        return res.status(201).json({ message: error })
+                    } else {
+                        if (results.rows.length > 0) {
+                            r.release()
+                            console.log(results.rows)
+                            return res.status(200).json({ data: results.rows })
+                        } else {
+                            r.release()
+                            console.log(error)
+                            return res.status(201).json({ message: 'This store has no mounted products' })
+                        }
+                    }
+                })
+
+
+
+            } catch (error) {
+                r.release()
+                return res.status(201).json({ message: error })
+                console.log(error)
+            }
+        } else {
+            return res.status(201).json({ message: 'Database Connection failed' })
+        }
+    })
+})
+
+
+
+
+
+
 router.post('/loadpriceGroups', cors({ origin: '*' }), async (req, res) => {
 
     let data = req.body
@@ -3161,6 +3280,97 @@ console.log(data)
         }
     })
 })
+
+
+
+
+
+router.post('/addcustomprice', cors({ origin: '*' }), async (req, res) => {
+
+    let data = req.body
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+console.log(data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            try {
+                
+                query = `SELECT brandid FROM otherproductprices WHERE brandid=$1  `
+                r.query(query, [data.brandid], (error, results) => {
+                    if (error) {
+                        r.release()
+                        console.log(error)
+                        
+                        return res.status(201).json({ message: error })
+                    } else {
+                        if (results.rows.length > 0) {
+
+                            query = `UPDATE otherproductprices SET price=$1,datemodified=$2 WHERE  brandid=$3 `
+                            r.query (query, [data.price, new Date(), data.brandid], (error, results) => {
+                                if (error) {
+                                    r.release()
+                                    console.log(error)
+                                    return res.status(201).json({ message: error })
+                                } else {
+                                    if (results.rowCount > 0) {
+                                        console.log('Updated')
+                                        r.release()
+                                        return res.status(201).json({ success: 'Unit Price successfully Added' })
+                                    } else {
+                                        r.release()
+                                        console.log('Update failed')
+                                        return res.status(201).json({ success: 'An Error has occured while adding unit price' })
+                                    }
+
+                                }
+                            })
+                        } else {
+                            console.log('inserting')
+                            query = `INSERT INTO otherproductprices(
+                           productid,
+                           category,
+                           brandid,
+                           pricegroup,
+                           price,
+                           priceid,
+                           dateadded,
+                           datemodified,
+                           item_type
+                           )VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`
+                            r.query(query, [data.product_number, data.product_cartegory, data.brandid, data.PriceGroup,data.price, data.priceID, new Date(),null,data.customItem], (error, results) => {
+                                if (error) {
+                                    r.release()
+                                    console.log(error)
+                                    return res.status(201).json({ message: error })
+                                } else {
+                                    if (results.rowCount > 0) {
+                                        r.release()
+                                        console.log('Unit Price successfully Added')
+                                        return res.status(200).json({ success: 'Unit Price successfully Added' })
+                                    } else {
+                                        r.release()
+                                        console.log('An error has occured while adding unit price')
+                                        return res.status(200).json({ message: 'An error has occured while adding unit price' })
+                                    }
+                                }
+                            })
+                        }
+                    }
+                })
+            } catch (error) {
+                r.release()
+                return res.status(201).json({ message: error })
+                console.log(error)
+            }
+        } else {
+            console.log('database failed')
+            return res.status(201).json({ message: 'Database Connection failed' })
+        }
+    })
+})
+
+
 
 
 router.post('/loadstoreprices', cors({ origin: '*' }), async (req, res) => {

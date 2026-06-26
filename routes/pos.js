@@ -518,7 +518,7 @@ router.post('/AddCart', cors({ origin: '*' }), async (req, res) => {
                         if (results.rows.length > 0) {
 
                             query = "INSERT INTO tb_cash_sale_temp(invoice_number,productid,brand,quantity,unitprice,totalcost,purchaseid,customertype,store_number,sales_type)VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)"
-                            r.query(query, [data.invoiceNumber, data.productId, data.brandId, data.quantity, data.uniPrice, data.quantity * data.uniPrice, data.purchaseId, data.customerType, data.storeNumber, data.salesObject], (error, results) => {
+                            r.query(query, [data.invoiceNumber, data.productId, data.brandId, data.quantity, data.uniPrice, data.totalCost, data.purchaseId, data.customerType, data.storeNumber, data.salesObject], (error, results) => {
                                 if (error) {
                                     console.log(error)
                                     r.release()
@@ -1071,7 +1071,7 @@ router.post('/AddcreditCart', cors({ origin: '*' }), async (req, res) => {
                     } else {
                         if (results.rows.length > 0) {
                             query = "INSERT INTO tb_credit_saletemp(invoice_number,productid,brand,quantity,unitprice,totalcost,purchaseid,customertype,store_number,sales_type)VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)"
-                            r.query(query, [data.invoiceNumber, data.productId, data.brandId, data.quantity, data.uniPrice, data.quantity * data.uniPrice, data.purchaseId, data.customerType, data.storeNumber, data.salesObject], (error, results) => {
+                            r.query(query, [data.invoiceNumber, data.productId, data.brandId, data.quantity, data.uniPrice, data.totalCost, data.purchaseId, data.customerType, data.storeNumber, data.salesObject], (error, results) => {
                                 if (error) {
                                     console.log(error)
                                     r.release()
@@ -2293,6 +2293,55 @@ router.post('/join_credit_cash_salse', cors({ origin: '*' }), async (req, res) =
                         WHERE cr.dateposted = $1; `;
 
                 r.query(query, [formattedDate], (error, results) => {
+                    if (error) {
+                        r.release()
+                        console.log(error)
+                        return res.status(201).json({ message: error })
+                    } else {
+                        if (results.rows.length > 0) {
+                            console.log(results.rows)
+                            r.release()
+                            return res.status(200).json({ data: results.rows })
+                        } else {
+                            r.release()
+                            console.log('no invoice found')
+                            res.status(201).json({ message: 'No invoice today' })
+                        }
+                    }
+                })
+
+            } catch (error) {
+                r.release()
+                return res.status(201).json({ message: error })
+                console.log(error)
+            }
+        } else {
+            r.release()
+            console.log('Database connection failed')
+            return res.status(201).json({ message: 'Database Connection failed' })
+        }
+    })
+})
+
+
+
+
+router.post('/loadotherprices', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    await pool.connect().then(async (r) => {
+        let data = req.body
+            console.log(data)
+        if (r._connected) {
+
+            // const customOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
+            // let formattedDate = new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated)
+            console.log();
+            try {
+                query = `SELECT * FROM otherproductprices WHERE productid=$1 AND brandid=$2 `
+
+                r.query(query,[data.product_number,data.btandid], (error, results) => {
                     if (error) {
                         r.release()
                         console.log(error)
