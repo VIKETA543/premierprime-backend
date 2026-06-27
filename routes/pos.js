@@ -902,8 +902,8 @@ router.post('/submitInvoice', cors({ origin: '*' }), async (req, res) => {
 
                                         counter = 0
 
-                                        query = 'INSERT INTO invoice_summaries(invoice_number,invoice_total,dateposted,sales_type,payment_progress,store_number)VALUES($1,$2,$3,$4,$5,$6)'
-                                        r.query(query, [data.invoceNumber, data.sumInvoiceTotal, new Date(), data.salesObject, 'NO_PAYMENT_MADE', rws[0].store_number], (error, results) => {
+                                        query = 'INSERT INTO invoice_summaries(invoice_number,invoice_total,dateposted,sales_type,payment_progress)VALUES($1,$2,$3,$4,$5)'
+                                        r.query(query, [data.invoceNumber, data.sumInvoiceTotal, new Date(), data.salesObject, 'NO_PAYMENT_MADE'], (error, results) => {
                                             if (error) {
                                                 console.log('Error==== ', error)
                                                 r.release()
@@ -1239,8 +1239,8 @@ router.post('/submitcreditInvoice', cors({ origin: '*' }), async (req, res) => {
                                         r.query('ROLLBACK')
                                         return res.status(200).json({ message: 'Invoice already submitted' })
                                     } else {
-                                        query = 'INSERT INTO tb_credit_invoice_summary(invoice_number,invoice_total,dateposted,payment_progress,sales_type,store_number)VALUES($1,$2,$3,$4,$5,$6)'
-                                        r.query(query, [data.invoceNumber, data.sumInvoiceTotal, new Date(), 'NO_PAYMENT_MADE', data.salesObject, data.store_number], (error, results) => {
+                                        query = 'INSERT INTO tb_credit_invoice_summary(invoice_number,invoice_total,dateposted,payment_progress,sales_type)VALUES($1,$2,$3,$4,$5)'
+                                        r.query(query, [data.invoceNumber, data.sumInvoiceTotal, new Date(), 'NO_PAYMENT_MADE', data.salesObject], (error, results) => {
                                             if (error) {
                                                 console.log(error)
                                                 r.release()

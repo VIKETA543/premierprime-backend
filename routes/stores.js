@@ -2633,6 +2633,87 @@ router.post('/join_credit_cash_sale_store_unverified', cors({ origin: '*' }), as
 })
 
 
+
+
+router.post('/general_joint_transaction', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    await pool.connect().then(async (r) => {
+        let data = req.body
+        if (r._connected) {
+            const customOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
+            let formattedDate = new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated)
+            try {
+                query = `SELECT 
+                            ca.invoice_number, ca.product_number, ca.purchaseid, ca.product_brand, 
+                            ca.quantity_sold, ca.unit_price, ca.total_price, ca.dateposted,  
+                            ca.isinvoice_verified, ca.isinvoice_paid, ca.datepaid, 
+                            ca.invoice_submitted, ca.store_number, ca.store_verified,ca.item_issued,
+                          p.name, br.title, asi.sales_type,st.storename 
+                        FROM tb_cash_sales ca
+                        LEFT JOIN stores st ON  ca.store_number=st.storenumber 
+                        LEFT JOIN products p ON p.serialnumber = ca.product_number
+                        LEFT JOIN productbrand br ON br.brandid = ca.product_brand
+                        LEFT JOIN tb_all_sales_invoices asi ON ca.invoice_number=asi.invoice_number
+                        WHERE ca.store_number=$1
+                        UNION
+                        SELECT 
+                            cr.invoice_number, cr.product_number, cr.purchaseid, cr.product_brand, 
+                            cr.quantity_sold, cr.unit_price, cr.total_price, cr.dateposted,  
+                            cr.isinvoice_verified, cr.isinvoice_paid, cr.datepaid, 
+                            cr.invoice_submitted, cr.store_number, cr.store_verified,cr.item_issued,
+                            p.name, br.title, asi.sales_type,st.storename  
+                        FROM tb_credit_sales cr 
+                        LEFT JOIN stores st ON cr.store_number = st.storenumber 
+                        LEFT JOIN products p ON p.serialnumber = cr.product_number
+                        LEFT JOIN productbrand br ON br.brandid = cr.product_brand
+                        LEFT JOIN tb_all_sales_invoices asi ON cr.invoice_number=asi.invoice_number 
+                        WHERE cr.store_number=$1 `;
+
+                r.query(query, [ data.store_number], (error, results) => {
+                    if (error) {
+                        r.release()
+                        console.log(error)
+                        return res.status(201).json({ message: error })
+                    } else {
+                        if (results.rows.length > 0) {
+                            console.log('Prepared Credit Invoices', results.rows.length)
+                            r.release()
+                            let totalProduct=0
+                            var c=0
+                            while(c<results.rows.length){
+                                totalProduct=totalProduct+results.rows[c].quantity_sold
+                                c++
+        
+                            }
+
+                            return res.status(200).json({ data: results.rows,total:totalProduct })
+                        } else {
+                            r.release()
+                                     
+                            res.status(201).json({ message: 'No transactions today' })
+                        }
+                    }
+                })
+
+            } catch (error) {
+                r.release()
+                return res.status(201).json({ message: error })
+                console.log(error)
+            }
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Database Connection failed' })
+        }
+    })
+})
+
+
+
+
+
+
 router.post('/prepared_cash_invoices', cors({ origin: '*' }), async (req, res) => {
     res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
@@ -2655,7 +2736,7 @@ router.post('/prepared_cash_invoices', cors({ origin: '*' }), async (req, res) =
                         if (results.rows.length > 0) {
 
                             let invoice_number = results.rows[0].invoice_number
-                            console.log(invoice_number)
+                          
                             query = `SELECT tb_cashsale_invoices.invoice_number,
                 tb_cashsale_invoices.dateposted,
                 tb_cashsale_invoices.isinvoice_verified,
@@ -2673,10 +2754,10 @@ router.post('/prepared_cash_invoices', cors({ origin: '*' }), async (req, res) =
                  tb_cashsale_invoices
                   LEFT JOIN 
                   invoice_summaries ON 
-                  tb_cashsale_invoices.invoice_number=invoice_summaries.invoice_number 
-                   WHERE  tb_cashsale_invoices.dateposted=$1 AND tb_cashsale_invoices.invoice_number=$2`
+                  tb_cashsale_invoices.invoice_number=invoice_summaries.invoice_number  
+                   WHERE  tb_cashsale_invoices.dateposted=$1 `
                             console.log('The invoice', invoice_number)
-                            r.query(query, [formattedDate, invoice_number], (error, results) => {
+                            r.query(query, [formattedDate], (error, results) => {
                                 if (error) {
                                     r.release()
                                     console.log(error)
@@ -2684,7 +2765,6 @@ router.post('/prepared_cash_invoices', cors({ origin: '*' }), async (req, res) =
                                 } else {
                                     if (results.rows.length > 0) {
                                         r.release()
-                                        console.log('Prepared invoices DATA', results.rows)
                                         return res.status(200).json({ data: results.rows })
                                     } else {
                                         r.release()
@@ -2723,15 +2803,27 @@ router.post('/prepared_credit_invoices', cors({ origin: '*' }), async (req, res)
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
     await pool.connect().then(async (r) => {
         let data = req.body
-        //    console.log(data)
+            console.log('the Credit data',data)
         if (r._connected) {
 
             const customOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
             let formattedDate = new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated)
             console.log(new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated));
             try {
-                query = "SELECT tb_credit_sale_invoice.invoice_number,tb_credit_sale_invoice.dateposted, tb_credit_sale_invoice.isinvoice_verified, tb_credit_sale_invoice.customername, tb_credit_sale_invoice.telephone, tb_credit_sale_invoice.emailaddress, tb_credit_sale_invoice.address, tb_credit_sale_invoice.invoice_submitted, tb_credit_sale_invoice.customertype, tb_credit_sale_invoice.customerid, tb_credit_sale_invoice.preparedby, tb_credit_invoice_summary.sales_type, tb_credit_invoice_summary.is_payment_complete" +
-                    " FROM tb_credit_sale_invoice LEFT JOIN tb_credit_invoice_summary  ON tb_credit_sale_invoice.invoice_number=tb_credit_invoice_summary.invoice_number  WHERE  tb_credit_sale_invoice.dateposted=$1"
+                query = `SELECT tb_credit_sale_invoice.invoice_number,
+                tb_credit_sale_invoice.dateposted,
+                 tb_credit_sale_invoice.isinvoice_verified,
+                  tb_credit_sale_invoice.customername, 
+                  tb_credit_sale_invoice.telephone, 
+                  tb_credit_sale_invoice.emailaddress,
+                   tb_credit_sale_invoice.address,
+                    tb_credit_sale_invoice.invoice_submitted,
+                     tb_credit_sale_invoice.customertype,
+                      tb_credit_sale_invoice.customerid,
+                       tb_credit_sale_invoice.preparedby,
+                        tb_credit_invoice_summary.sales_type,
+                         tb_credit_invoice_summary.is_payment_complete 
+                     FROM tb_credit_sale_invoice LEFT JOIN tb_credit_invoice_summary  ON tb_credit_sale_invoice.invoice_number=tb_credit_invoice_summary.invoice_number   WHERE  tb_credit_sale_invoice.dateposted=$1  `
 
                 r.query(query, [formattedDate], (error, results) => {
                     if (error) {
@@ -2740,7 +2832,6 @@ router.post('/prepared_credit_invoices', cors({ origin: '*' }), async (req, res)
                         return res.status(201).json({ message: error })
                     } else {
                         if (results.rows.length > 0) {
-                            console.log(results.rows)
                             r.release()
                             return res.status(200).json({ data: results.rows })
                         } else {
@@ -3470,4 +3561,47 @@ router.post('/loadAllprices', cors({ origin: '*' }), async (req, res) => {
 
 
 
+
+
+router.post('/loadOtherprices', cors({ origin: '*' }), async (req, res) => {
+
+    let data = req.body
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    console.log('verify credit invoice', data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            try {
+                query = `SELECT productid,brandid,price,item_type FROM otherproductprices`
+                r.query(query,(error, results) => {
+                    if (error) {
+                        r.release()
+                        console.log(error)
+                        return res.status(201).json({ message: error })
+                    } else {
+                        if (results.rows.length > 0) {
+                            r.release()
+                            console.log(results.rows)
+                            return res.status(200).json({ data: results.rows })
+                        } else {
+                            r.release()
+                            console.log(error)
+                            return res.status(201).json({ message: 'No Additonal Prices' })
+                        }
+                    }
+                })
+
+
+
+            } catch (error) {
+                r.release()
+                return res.status(201).json({ message: error })
+                console.log(error)
+            }
+        } else {
+            return res.status(201).json({ message: 'Database Connection failed' })
+        }
+    })
+})
 module.exports = router
