@@ -1055,9 +1055,9 @@ router.post('/submitProductVerification', cors({ origin: '*' }), async (req, res
                                                     } else {
 
                                                         if (results.rowCount > 0) {
-                                                            query = 'UPDATE invoice_summaries SET store_verified=$1 WHERE invoice_number=$2 AND store_number=$3 AND sales_type=$4'
-                                                            r.query(query, [true, data.invoiceNumber, data.storeNumber, data.sales_type], (error, results) => {
-                                                                //   console.log('stock found',results)
+                                                            query = 'UPDATE invoice_summaries SET store_verified=$1 WHERE invoice_number=$2 AND sales_type=$3'
+                                                            r.query(query, [true, data.invoiceNumber, data.sales_type], (error, results) => {
+                                                              console.log('Updating cash saled',data)
                                                                 if (error) {
                                                                     r.query('ROLLBACK')
                                                                     r.release()
@@ -2656,7 +2656,7 @@ router.post('/general_joint_transaction', cors({ origin: '*' }), async (req, res
                         LEFT JOIN products p ON p.serialnumber = ca.product_number
                         LEFT JOIN productbrand br ON br.brandid = ca.product_brand
                         LEFT JOIN tb_all_sales_invoices asi ON ca.invoice_number=asi.invoice_number
-                        WHERE ca.store_number=$1
+                        WHERE ca.store_number=$1 AND ca.dateposted=$2
                         UNION
                         SELECT 
                             cr.invoice_number, cr.product_number, cr.purchaseid, cr.product_brand, 
@@ -2669,9 +2669,9 @@ router.post('/general_joint_transaction', cors({ origin: '*' }), async (req, res
                         LEFT JOIN products p ON p.serialnumber = cr.product_number
                         LEFT JOIN productbrand br ON br.brandid = cr.product_brand
                         LEFT JOIN tb_all_sales_invoices asi ON cr.invoice_number=asi.invoice_number 
-                        WHERE cr.store_number=$1 `;
+                        WHERE cr.store_number=$1 AND cr.dateposted=$2 `;
 
-                r.query(query, [ data.store_number], (error, results) => {
+                r.query(query, [ data.store_number,formattedDate], (error, results) => {
                     if (error) {
                         r.release()
                         console.log(error)
@@ -3594,6 +3594,52 @@ router.post('/loadOtherprices', cors({ origin: '*' }), async (req, res) => {
 
 
 
+            } catch (error) {
+                r.release()
+                return res.status(201).json({ message: error })
+                console.log(error)
+            }
+        } else {
+            return res.status(201).json({ message: 'Database Connection failed' })
+        }
+    })
+})
+
+
+
+
+
+router.post('/stockbalances', cors({ origin: '*' }), async (req, res) => {
+
+    let data = req.body
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    // console.log('verify credit invoice', data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            try {
+                query = `SELECT tb_daily_rotating_stock.product_number,tb_daily_rotating_stock.product_brand,tb_daily_rotating_stock.store_number,tb_daily_rotating_stock.avaible_quantity,tb_daily_rotating_stock.quantity_sold,tb_daily_rotating_stock.stock_balance,tb_daily_rotating_stock.is_current,tb_daily_rotating_stock.date_posted,tb_daily_rotating_stock.new_quantity, 
+                products.name, productbrand.title,productbrand.imageurl FROM tb_daily_rotating_stock LEFT JOIN products ON tb_daily_rotating_stock.product_number=products.serialnumber LEFT JOIN productbrand ON tb_daily_rotating_stock.product_brand=productbrand.brandid
+                WHERE tb_daily_rotating_stock.is_current=$1 AND tb_daily_rotating_stock.store_number=$2`
+
+                r.query(query,[true,data.storeNumber],(error, results) => {
+                    if (error) {
+                        r.release()
+                        console.log(error)
+                        return res.status(201).json({ message: error })
+                    } else {
+                        if (results.rows.length > 0) {
+                            r.release()
+                            // console.log('Stock Balances',results.rows)
+                            return res.status(200).json({ data: results.rows })
+                        } else {
+                            r.release()
+                            console.log(error)
+                            return res.status(201).json({ message: 'No Additonal Prices' })
+                        }
+                    }
+                })
             } catch (error) {
                 r.release()
                 return res.status(201).json({ message: error })
