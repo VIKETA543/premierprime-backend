@@ -536,8 +536,31 @@ router.post('/AddCart', cors({ origin: '*' }), async (req, res) => {
 
                             })
                         } else {
-                            r.release()
-                            return res.status(200).json({ message: 'Invoice has not been initiated. Initiate and Invoice and continue' })
+                            if (data.invoiceNumber !== undefined && data.invoiceNumber !== null && data.invoiceNumber !== '') {
+                                query = "INSERT INTO tb_cash_sale_temp(invoice_number,productid,brand,quantity,unitprice,totalcost,purchaseid,customertype,store_number,sales_type)VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)"
+                                r.query(query, [data.invoiceNumber, data.productId, data.brandId, data.quantity, data.uniPrice, data.totalCost, data.purchaseId, data.customerType, data.storeNumber, data.salesObject], (error, results) => {
+                                    if (error) {
+                                        console.log(error)
+                                        r.release()
+                                        return res.status(201).json({ message: error })
+                                    } else {
+                                        if (results.rowCount > 0) {
+                                            r.release()
+                                            return res.status(200).json({ success: "Request success" })
+                                        } else {
+                                            r.release()
+                                            console.log('Request failed. Try again')
+                                            return res.status(200).json({ message: 'Request failed. Try again' })
+                                        }
+                                    }
+
+                                })
+                            } else {
+
+                                r.release()
+                                return res.status(200).json({ message: 'Invoice has not been initiated. Initiate and Invoice and continue' })
+                            }
+
                         }
                     }
 
@@ -2332,7 +2355,7 @@ router.post('/loadotherprices', cors({ origin: '*' }), async (req, res) => {
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
     await pool.connect().then(async (r) => {
         let data = req.body
-            console.log(data)
+        console.log(data)
         if (r._connected) {
 
             // const customOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
@@ -2341,7 +2364,7 @@ router.post('/loadotherprices', cors({ origin: '*' }), async (req, res) => {
             try {
                 query = `SELECT * FROM otherproductprices WHERE productid=$1 AND brandid=$2 `
 
-                r.query(query,[data.product_number,data.btandid], (error, results) => {
+                r.query(query, [data.product_number, data.btandid], (error, results) => {
                     if (error) {
                         r.release()
                         console.log(error)

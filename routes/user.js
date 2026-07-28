@@ -32,7 +32,7 @@ router.post('/signup', cors({ origin: '*' }), async (req, res) => {
                         return res.status(200).json({ success: 'Custommer successfuly added' })
                     } else {
                         r.release()
-                               console.log('Signing failed')
+                        console.log('Signing failed')
                         return res.status(200).json({ message: 'Unknown error has occured' })
                     }
                 }
@@ -251,21 +251,24 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
         // 2. Check if the password/user already exists
         const checkQuery = 'SELECT * FROM users WHERE email_address = $1 OR prim_phone_number=$2';
         const checkResult = await client.query(checkQuery, [data.email, data.email]);
-      
+
         if (checkResult.rows.length > 0) {
             //   console.log('email correct',checkResult.rows)
             const saveUac = checkResult.rows[0].uac_id
-             console.log('uacid:=>', saveUac)
-            const findPasswordquery = 'SELECT u_passward FROM tb_auth WHERE uac_id=$1';
+
+            console.log('uacid:=>', saveUac)
+            const findPasswordquery = 'SELECT u_passward,auto_login FROM tb_auth WHERE uac_id=$1';
             const oldPassword = await client.query(findPasswordquery, [saveUac])
+            const auto_login = oldPassword.rows[0].auto_login
+            console.log(oldPassword.rows)
 
             if (oldPassword.rows.length > 0) {
                 const foundPassword = oldPassword.rows[0].u_passward
                 console.log('found password', foundPassword)
-                  console.log('Supplied password', data.password)
-                 // const isMatch = await bcrypt.compare(data.password, foundPassword);
-                 // if (isMatch) {
-                        console.log('Password Match')
+                console.log('Supplied password', data.password)
+                const isMatch = await bcrypt.compare(data.password, foundPassword);
+                if (isMatch) {
+                    console.log('Password Match')
                     query = 'SELECT hook_number FROM uacp WHERE uac_id=$1'
                     client.query(query, [saveUac], (error, results) => {
                         if (error) {
@@ -285,10 +288,14 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
                                     } else {
                                         if (results.rows.length > 0) {
                                             const approval = results.rows[0].approved
-                                            const id=results.rows[0].uac_id
+                                            const id = results.rows[0].uac_id
+
                                             if (approval === true) {
 
-                                                return res.status(201).json({ success: 'Login succesful', hook: saved_hook,uac_id:id,user:checkResult.rows[0] })
+                                                console.log('auto_login', auto_login)
+                                                return res.status(201).json({ success: 'Login succesful', hook: saved_hook, uac_id: id, user: checkResult.rows[0], autoLogin: auto_login })
+
+
                                             } else {
                                                 if (approval === false) {
                                                     return res.status(201).json({ denied: 'Unable to login. Access denied' })
@@ -311,11 +318,11 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
                     })
 
 
-                // } else {
-                //     console.log("Password does not match")
-                //     return res.status(201).json({ message: '"Invalid password. Your password cannot be found in the database"' })
-                //     console.log("Invalid password. Your password cannot be found in the database");
-                // }
+                } else {
+                    console.log("Password does not match")
+                    return res.status(201).json({ message: '"Invalid password. Your password cannot be found in the database"' })
+                    console.log("Invalid password. Your password cannot be found in the database");
+                }
 
 
             } else {
@@ -371,6 +378,274 @@ router.get('/userredentials', cors({ origin: '*' }), async (req, res) => {
     })
 })
 
+
+
+router.get('/listusers', cors({ origin: '*' }), async (req, res) => {
+
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = `SELECT  users.uac_id, 
+            users.fullname,
+            users.passport_picture_url,
+            users.prim_phone_number,
+            users.email_address,
+            users.national_id,
+            users.passport_picture_url,
+            users.date_posted,
+            users.gender,
+            users.digital_address,
+            users.surburb,
+            users.id_card_type,
+            users.sec_phone_number, 
+            users.date_of_birth,
+            users.age,
+            tb_auth.auto_login ,
+            tb_auth.auth,
+            tb_auth.approved
+             FROM users LEFT JOIN 
+             tb_auth ON users.uac_id=tb_auth.uac_id`
+            r.query(query, (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release()
+                    res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rows.length > 0) {
+                        r.release()
+                        console.log('Users', results.rows)
+                        return res.status(200).json({ data: results.rows })
+                    } else {
+                        r.release()
+                        return res.status(201).json({ message: 'Unknown error has occured' })
+                    }
+                }
+            })
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Failed to connect to the database' })
+        }
+    })
+})
+
+
+
+
+
+
+
+router.post('/setUserAutoLogin', cors({ origin: '*' }), async (req, res) => {
+
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = `SELECT uac_id FROM tb_auth WHERE uac_id = $1`
+            r.query(query, [data.user], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release()
+                    res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rows.length > 0) {
+                        query = `UPDATE tb_auth SET auto_login=$1 WHERE uac_id=$2`
+                        r.query(query, [data.auto_login, data.user], (error, results) => {
+                            if (error) {
+                                r.release()
+                                return res.status(200).json({ message: error.detail })
+                            } else {
+                                if (results.rowCount > 0) {
+                                    r.release()
+                                    if(data.auto_login===true){
+                                            return res.status(200).json({ success: 'Auto login successfully granted for the user' })
+                                    }else{
+                                          return res.status(200).json({ success: 'Auto login revocked for the user' })  
+                                    }
+                                
+                                } else {
+                                    r.release()
+                                    return res.status(200).json({ message: 'Unknown error has occured' })
+                                }
+                            }
+                        })
+                    } else {
+                        r.release()
+                        return res.status(200).json({ message: 'Invalid User' })
+                    }
+                }
+            })
+
+
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Failed to connect to the database' })
+        }
+    })
+})
+
+
+
+router.post('/onAccess', cors({ origin: '*' }), async (req, res) => {
+
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = `SELECT uac_id FROM tb_auth WHERE uac_id = $1`
+            r.query(query, [data.user], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release()
+                    res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rows.length > 0) {
+                        query = `UPDATE tb_auth SET auth=$1 WHERE uac_id=$2`
+                        r.query(query, [data.access, data.user], (error, results) => {
+                            if (error) {
+                                r.release()
+                                return res.status(200).json({ message: error.detail })
+                            } else {
+                                if (results.rowCount > 0) {
+                                    r.release()
+                                    if(data.access===true){
+                                               return res.status(200).json({ success: 'Account Access successfuly granted' })
+                                    }else{
+                                               return res.status(200).json({ success: 'Account Access successfuly Revocked' })
+                                    }
+                             
+                                } else {
+                                    r.release()
+                                    return res.status(200).json({ message: 'Unknown error has occured' })
+                                }
+                            }
+                        })
+                    } else {
+                        r.release()
+                        return res.status(200).json({ message: 'Invalid User' })
+                    }
+                }
+            })
+
+
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Failed to connect to the database' })
+        }
+    })
+})
+
+
+router.post('/onApproval', cors({ origin: '*' }), async (req, res) => {
+
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = `SELECT uac_id FROM tb_auth WHERE uac_id = $1`
+            r.query(query, [data.user], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release()
+                    res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rows.length > 0) {
+                        query = `UPDATE tb_auth SET auth=$1 WHERE uac_id=$2`
+                        r.query(query, [data.approved, data.user], (error, results) => {
+                            if (error) {
+                                r.release()
+                                return res.status(200).json({ message: error.detail })
+                            } else {
+                                if (results.rowCount > 0) {
+                                    r.release()
+                                    if(data.access===true){
+                                               return res.status(200).json({ success: 'Account  successfuly approved' })
+                                    }else{
+                                               return res.status(200).json({ success: 'Account approval successfuly Revocked' })
+                                    }
+                             
+                                } else {
+                                    r.release()
+                                    return res.status(200).json({ message: 'Unknown error has occured' })
+                                }
+                            }
+                        })
+                    } else {
+                        r.release()
+                        return res.status(200).json({ message: 'Invalid User' })
+                    }
+                }
+            })
+
+
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Failed to connect to the database' })
+        }
+    })
+})
+
+
+
+
+router.post('/onDeleteUser', cors({ origin: '*' }), async (req, res) => {
+
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = `SELECT uac_id FROM tb_auth WHERE uac_id = $1`
+            r.query(query, [data.user], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release()
+                    res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rows.length > 0) {
+                        query = `DELETE FROM users  WHERE uac_id=$1`
+                        r.query(query, [data.user], (error, results) => {
+                            if (error) {
+                                r.release()
+                                return res.status(200).json({ message: error.detail })
+                            } else {
+                                if (results.rowCount > 0) {
+                                    r.release()
+                                    if(data.access===true){
+                                               return res.status(200).json({ success: 'Account  successfuly approved' })
+                                    }else{
+                                               return res.status(200).json({ success: 'Account approval successfuly Revocked' })
+                                    }
+                             
+                                } else {
+                                    r.release()
+                                    return res.status(200).json({ message: 'Unknown error has occured' })
+                                }
+                            }
+                        })
+                    } else {
+                        r.release()
+                        return res.status(200).json({ message: 'Invalid User' })
+                    }
+                }
+            })
+
+
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Failed to connect to the database' })
+        }
+    })
+})
 
 
 
@@ -454,7 +729,7 @@ router.post('/authrole', cors({ origin: '*' }), async (req, res) => {
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
     let data = req.body
-    console.log('The data: ',data)
+    console.log('The data: ', data)
     await pool.connect().then(async (r) => {
         if (r._connected) {
             query = 'SELECT hook_number,hooked_department,hooked_store,uac_id,login_redirect,access FROM uacp WHERE hook_number=$1 AND access=$2 '
@@ -468,7 +743,7 @@ router.post('/authrole', cors({ origin: '*' }), async (req, res) => {
                     if (results.rows.length > 0) {
                         const auth = results.rows[0].access
                         if (auth === true) {
-                            console.log('authorisation suucess ON STORE',results.rows)
+                            console.log('authorisation suucess ON STORE', results.rows)
                             query = 'SELECT storenumber, storename FROM stores WHERE storenumber=$1'
                             r.query(query, [results.rows[0].hooked_store], (error, storeResults) => {
                                 if (error) {
@@ -510,7 +785,7 @@ router.post('/loadUserInformation', cors({ origin: '*' }), async (req, res) => {
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
     let data = req.body
-    console.log('data=>: ',data)
+    console.log('data=>: ', data)
     await pool.connect().then(async (r) => {
         if (r._connected) {
             query = 'SELECT users.uac_id,users.fullname,users.prim_phone_number,users.email_address,users.national_id,users.photo_id_url, users.passport_picture_url, users.date_posted, users.gender, users.digital_address, users.surburb, users.id_card_type, users.sec_phone_number, users.date_of_birth, users.age,' +
@@ -567,7 +842,7 @@ router.post('/resetPassword', cors({ origin: '*' }), async (req, res) => {
                         return res.status(200).json({ data: results.rows })
                     } else {
                         r.release()
-                               console.log('Signing failed')
+                        console.log('Signing failed')
                         return res.status(200).json({ message: 'Invalid email Address' })
                     }
                 }
