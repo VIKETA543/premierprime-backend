@@ -1,7 +1,7 @@
 const express = require("express");
 const pool = require('../dbconnectivity')
 const cors = require('cors');
-require('dotenv').config()
+require('dotenv').config({ override: true });
 const router = express.Router()
 
 router.get('/displayProducts', cors({ origin: '*' }), async (req, res) => {
