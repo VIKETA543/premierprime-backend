@@ -1,7 +1,8 @@
 const express = require("express");
 const pool = require('../dbconnectivity')
 const cors = require('cors');
-require('dotenv').config()
+// require('dotenv').config()
+require('dotenv').config({ override: true });
 const router = express.Router()
 const multer = require('multer')
 const { put } = require('@vercel/blob');
