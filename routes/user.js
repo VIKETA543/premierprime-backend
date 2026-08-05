@@ -268,9 +268,9 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
                 console.log('found password', foundPassword)
                 console.log('Supplied password', data.password)
                 const isMatch = await bcrypt.compare(data.password, foundPassword);
-                // if (isMatch) {
+                //  if (isMatch) {
                     console.log('Password Match')
-                    query = 'SELECT hook_number FROM uacp WHERE uac_id=$1'
+                    query = 'SELECT hook_number,login_redirect FROM uacp WHERE uac_id=$1'
                     client.query(query, [saveUac], (error, results) => {
                         if (error) {
                             console.log(error);
@@ -279,6 +279,7 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
 
                             if (results.rows.length > 0) {
                                 const saved_hook = results.rows[0].hook_number
+                                const redirector=results.rows[0].login_redirect
                                 console.log('the hook', saved_hook)
                                 query = 'SELECT approved, uac_id FROM tb_auth WHERE uac_id=$1';
                                 client.query(query, [saveUac], (error, results) => {
@@ -293,8 +294,8 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
 
                                             if (approval === true) {
 
-                                                console.log('auto_login', auto_login)
-                                                return res.status(201).json({ success: 'Login succesful', hook: saved_hook, uac_id: id, user: checkResult.rows[0], autoLogin: auto_login })
+                                                console.log('auto_login', auto_login,redirector)
+                                                return res.status(201).json({ success: 'Login succesful', hook: saved_hook, uac_id: id, user: checkResult.rows[0], autoLogin: auto_login,redirector:redirector })
 
 
                                             } else {
