@@ -854,4 +854,90 @@ router.post('/dropProduct', cors({ origin: '*' }), async (req, res) => {
 
 
 
+
+router.post('/updateBrand', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    let data = req.body
+    console.log("the body", data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            try {
+            
+                query = "UPDATE  productbrand SET title=$1 WHERE brandid=$2 RETURNING *"
+                r.query(query, [data.brandeditedText, data.brandid], (error, results) => {
+                    if (error) {
+                        console.log(error)
+                        r.release()
+                    } else {
+                        if (results.rowCount > 0) {
+                            let rs = results.rows
+                            console.log(results)
+                            r.release()
+                            return res.status(200).json({ success: "Request was successful", data: rs })
+                        } else {
+                            r.release()
+                            return res.status(200).json({ message: "Sorry, update failed" })
+                        }
+                    }
+                })
+            } catch (error) {
+                console.log(error)
+                r.release()
+                return res.status(200).json({ message: "Internal error occured" })
+            }
+        } else {
+            r.release()
+            return res.status(200).json({ message: "Connection failed" })
+        }
+
+    })
+
+
+})
+
+
+router.post('/updateRole', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+    let data = req.body
+    console.log("the body", data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            try {
+            
+                query = "UPDATE  productbrand SET role=$1 WHERE brandid=$2 RETURNING *"
+                r.query(query, [data.RoleeditedText, data.brandid], (error, results) => {
+                    if (error) {
+                        console.log(error)
+                        r.release()
+                    } else {
+                        if (results.rowCount > 0) {
+                            let rs = results.rows
+                            console.log(results)
+                            r.release()
+                            return res.status(200).json({ success: "Request was successful", data: rs })
+                        } else {
+                            r.release()
+                            return res.status(200).json({ message: "Sorry, update failed" })
+                        }
+                    }
+                })
+            } catch (error) {
+                console.log(error)
+                r.release()
+                return res.status(200).json({ message: "Internal error occured" })
+            }
+        } else {
+            r.release()
+            return res.status(200).json({ message: "Connection failed" })
+        }
+
+    })
+
+
+})
+
 module.exports = router       
