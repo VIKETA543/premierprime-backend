@@ -860,6 +860,55 @@ router.post('/resetPassword', cors({ origin: '*' }), async (req, res) => {
 
 
 
+router.post('/applyUpdate', cors({ origin: '*' }), async (req, res) => {
+
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    console.log(data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = `SELECT hook_number FROM uacp WHERE uac_id = $1`
+            r.query(query, [data.user], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release()
+                    res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rows.length > 0) {
+                        query = `UPDATE uacp SET hook_number = $1 WHERE uac_id = $2`
+                        r.query(query, [data.hrid, data.user], (error, results) => {
+                            if (error) {
+                                r.release()
+                                return res.status(200).json({ message: error.detail })
+                            } else {
+                                if (results.rowCount > 0) {
+                                    r.release()
+                                               return res.status(200).json({ success: 'Account  successfuly approved' })
+                             
+                                } else {
+                                    r.release()
+                                    return res.status(200).json({ message: 'The Account was not found' })
+                                }
+                            }
+                        })
+                    } else {
+                        r.release()
+                        return res.status(200).json({ message: 'Invalid User. This Account has not been assigned with Access Control' })
+                    }
+                }
+            })
+
+
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Failed to connect to the database' })
+        }
+    })
+})
+
+
 module.exports = router
 
 
