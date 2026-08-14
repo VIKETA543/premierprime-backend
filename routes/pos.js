@@ -2396,4 +2396,51 @@ router.post('/loadotherprices', cors({ origin: '*' }), async (req, res) => {
 })
 
 
+
+
+
+
+router.post('/daily_payment_history', cors({ origin: '*' }), async (req, res) => {
+ res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    await pool.connect().then(async (r) => {
+        let data = req.body
+         console.log(data.dated);
+        if (r._connected) { 
+            const customOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
+            let formattedDate = new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated)
+            console.log(new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated));
+            try { 
+                query = `SELECT invoice_number,invoice_total,isinvoice_verified,sales_type,dateposted,store_verified FROM invoice_summaries WHERE dateposted=$1`;
+
+                r.query(query, [formattedDate], (error, results) => {
+                    if (error) {
+                        r.release()
+                        console.log(error)
+                        return res.status(201).json({ message: error })
+                    } else {
+                        if (results.rows.length > 0) {
+                            console.log('Prepared Credit Invoices', results.rows)
+                            r.release()
+                            return res.status(200).json({ data: results.rows })
+                        } else {
+                            r.release()
+                            res.status(201).json({ message: 'No invoice today' })
+                        }
+                    }
+                })
+
+            } catch (error) {
+                r.release()
+                return res.status(201).json({ message: error })
+                console.log(error)
+            }
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Database Connection failed' })
+        }
+    })
+})
+
 module.exports = router
