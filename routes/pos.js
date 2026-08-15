@@ -2443,4 +2443,52 @@ router.post('/daily_payment_history', cors({ origin: '*' }), async (req, res) =>
     })
 })
 
+
+
+
+router.post('/myStores', cors({ origin: '*' }), async (req, res) => {
+ res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    await pool.connect().then(async (r) => {
+        let data = req.body
+         console.log(data.user);
+        if (r._connected) { 
+            // const customOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
+            // let formattedDate = new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated)
+            // console.log(new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated));
+            try { 
+                query = `SELECT tb_linked_store.store_number,tb_linked_store.redirector,tb_linked_store.authorise,stores.storename,stores.storenumber,stores.storetype 
+                FROM tb_linked_store 
+                LEFT JOIN  stores ON tb_linked_store.store_number=stores.storenumber WHERE tb_linked_store.uac_id=$1 `;
+
+                r.query(query, [data.user], (error, results) => {
+                    if (error) {
+                        r.release()
+                        console.log(error)
+                        return res.status(201).json({ message: error })
+                    } else {
+                        if (results.rows.length > 0) {
+                            console.log('Stores', results.rows)
+                            r.release()
+                            return res.status(200).json({ data: results.rows })
+                        } else {
+                            r.release()
+                            res.status(201).json({ message: 'You are not yet linked to Stores' })
+                        }
+                    }
+                })
+
+            } catch (error) {
+                r.release()
+                return res.status(201).json({ message: error })
+                console.log(error)
+            }
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Database Connection failed' })
+        }
+    })
+})
+
 module.exports = router

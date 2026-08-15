@@ -908,8 +908,188 @@ router.post('/applyUpdate', cors({ origin: '*' }), async (req, res) => {
     })
 })
 
+// 
+
+router.get('/loadStores', cors({ origin: '*' }), async (req, res) => {
+
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    console.log(data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = 'SELECT storenumber, storename, storetype FROM stores'
+            r.query(query, (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release()
+                    res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rows.length > 0) {
+                        r.release()
+                        // console.log(results)
+                        return res.status(200).json({ data: results.rows })
+                    } else {
+                        r.release()
+                        return res.status(200).json({ message: 'No Stores Avaialble. Create a store.' })
+                    }
+                }
+            })
+
+
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Failed to connect to the database' })
+        }
+    })
+
+})
+
+
+    
+router.post('/addStore', cors({ origin: '*' }), async (req, res) => {
+
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    console.log(data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = 'INSERT INTO tb_linked_store(uac_id,store_number,redirector) VALUES($1,$2,$3)'
+            r.query(query,[data.user,data.store,data.redirector], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release()
+                    res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rowCount> 0) {
+                        r.release()
+                        return res.status(200).json({ success: 'Store successfuly mounted' })
+                    } else {
+                        r.release()
+                        return res.status(200).json({ message: 'Operation has failed. trye again.' })
+                    }
+                }
+            })
+
+
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Failed to connect to the database' })
+        }
+    })
+
+})
+
+
+
+
+
+   
+router.post('/unlinkStore', cors({ origin: '*' }), async (req, res) => {
+
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    console.log(data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = `DELETE FROM tb_linked_store WHERE uac_id=$1 AND store_number=$2`
+            r.query(query,[data.user,data.store], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release()
+                    res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rowCount> 0) {
+                        r.release()
+                        return res.status(200).json({ success: 'Store has been unliked successfuly' })
+                    } else {
+                        r.release()
+                        return res.status(200).json({ message: 'Operation has failed. trye again.' })
+                    }
+                }
+            })
+
+
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Failed to connect to the database' })
+        }
+    })
+
+})
+
+  
+router.post('/authAccount', cors({ origin: '*' }), async (req, res) => {
+
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    console.log(data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = `UPDATE tb_linked_store SET authorise=$1 WHERE uac_id=$2 AND store_number=$3`
+            r.query(query,[true,data.user,data.store], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release()
+                    res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rowCount> 0) {
+                        r.release()
+                        return res.status(200).json({ success: 'Access has been granted successfuly' })
+                    } else {
+                        r.release()
+                        return res.status(200).json({ message: 'Operation has failed. trye again.' })
+                    }
+                }
+            })
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Failed to connect to the database' })
+        }
+    })
+
+})
+
+
+router.post('/declineAccess', cors({ origin: '*' }), async (req, res) => {
+
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+    console.log(data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = `UPDATE tb_linked_store SET authorise=$1 WHERE uac_id=$2 AND store_number=$3`
+            r.query(query,[false,data.user,data.store], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release()
+                    res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rowCount> 0) {
+                        r.release()
+                        return res.status(200).json({ success: 'Store has been revocked successfuly' })
+                    } else {
+                        r.release()
+                        return res.status(200).json({ message: 'Operation has failed. trye again.' })
+                    }
+                }
+            })
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Failed to connect to the database' })
+        }
+    })
+
+})
+
 
 module.exports = router
-
-
-// 
