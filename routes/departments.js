@@ -22,7 +22,7 @@ router.post('/submitNewDepartment', cors({ origin: '*' }), async (req, res) => {
     await pool.connect().then(async (r) => {
         if (r._connected) {
             query = 'INSERT INTO tb_department(hoid,departement_name,department_location,dept_description,hooked_store,date_created)VALUES($1,$2,$3,$4,$5,$6)'
-            r.query(query, [data.hoid,data.deptName,data.hoockedstore,data.location,data.deptDesc,new Date()], (error, results) => {
+            r.query(query, [data.hoid,data.deptName,data.location,data.deptDesc,data.hoockedstore,new Date()], (error, results) => {
                 if (error) {
                     console.log(error)
                     r.release()

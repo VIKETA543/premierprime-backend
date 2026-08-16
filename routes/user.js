@@ -268,7 +268,7 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
                 console.log('found password', foundPassword)
                 console.log('Supplied password', data.password)
                 const isMatch = await bcrypt.compare(data.password, foundPassword);
-                 if (isMatch) {
+                if (isMatch) {
                     console.log('Password Match')
                     query = 'SELECT hook_number,login_redirect FROM uacp WHERE uac_id=$1'
                     client.query(query, [saveUac], (error, results) => {
@@ -279,7 +279,7 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
 
                             if (results.rows.length > 0) {
                                 const saved_hook = results.rows[0].hook_number
-                                const redirector=results.rows[0].login_redirect
+                                const redirector = results.rows[0].login_redirect
                                 console.log('the hook', saved_hook)
                                 query = 'SELECT approved, uac_id FROM tb_auth WHERE uac_id=$1';
                                 client.query(query, [saveUac], (error, results) => {
@@ -294,8 +294,8 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
 
                                             if (approval === true) {
 
-                                                console.log('auto_login', auto_login,redirector)
-                                                return res.status(201).json({ success: 'Login succesful', hook: saved_hook, uac_id: id, user: checkResult.rows[0], autoLogin: auto_login,redirector:redirector })
+                                                console.log('auto_login', auto_login, redirector)
+                                                return res.status(201).json({ success: 'Login succesful', hook: saved_hook, uac_id: id, user: checkResult.rows[0], autoLogin: auto_login, redirector: redirector })
 
 
                                             } else {
@@ -315,7 +315,7 @@ router.post('/signin', cors({ origin: '*' }), async (req, res) => {
                             } else {
                                 console.log('Your role could not be verified. Verify if you are authorise to login')
                                 return res.status(201).json({ message: 'Your role could not be verified. Verify if you are authorise to login' })
-                             }
+                            }
                         }
                     })
 
@@ -463,12 +463,12 @@ router.post('/setUserAutoLogin', cors({ origin: '*' }), async (req, res) => {
                             } else {
                                 if (results.rowCount > 0) {
                                     r.release()
-                                    if(data.auto_login===true){
-                                            return res.status(200).json({ success: 'Auto login successfully granted for the user' })
-                                    }else{
-                                          return res.status(200).json({ success: 'Auto login revocked for the user' })  
+                                    if (data.auto_login === true) {
+                                        return res.status(200).json({ success: 'Auto login successfully granted for the user' })
+                                    } else {
+                                        return res.status(200).json({ success: 'Auto login revocked for the user' })
                                     }
-                                
+
                                 } else {
                                     r.release()
                                     return res.status(200).json({ message: 'Unknown error has occured' })
@@ -516,12 +516,12 @@ router.post('/onAccess', cors({ origin: '*' }), async (req, res) => {
                             } else {
                                 if (results.rowCount > 0) {
                                     r.release()
-                                    if(data.access===true){
-                                               return res.status(200).json({ success: 'Account Access successfuly granted' })
-                                    }else{
-                                               return res.status(200).json({ success: 'Account Access successfuly Revocked' })
+                                    if (data.access === true) {
+                                        return res.status(200).json({ success: 'Account Access successfuly granted' })
+                                    } else {
+                                        return res.status(200).json({ success: 'Account Access successfuly Revocked' })
                                     }
-                             
+
                                 } else {
                                     r.release()
                                     return res.status(200).json({ message: 'Unknown error has occured' })
@@ -568,12 +568,12 @@ router.post('/onApproval', cors({ origin: '*' }), async (req, res) => {
                             } else {
                                 if (results.rowCount > 0) {
                                     r.release()
-                                    if(data.access===true){
-                                               return res.status(200).json({ success: 'Account  successfuly approved' })
-                                    }else{
-                                               return res.status(200).json({ success: 'Account approval successfuly Revocked' })
+                                    if (data.access === true) {
+                                        return res.status(200).json({ success: 'Account  successfuly approved' })
+                                    } else {
+                                        return res.status(200).json({ success: 'Account approval successfuly Revocked' })
                                     }
-                             
+
                                 } else {
                                     r.release()
                                     return res.status(200).json({ message: 'Unknown error has occured' })
@@ -622,12 +622,12 @@ router.post('/onDeleteUser', cors({ origin: '*' }), async (req, res) => {
                             } else {
                                 if (results.rowCount > 0) {
                                     r.release()
-                                    if(data.access===true){
-                                               return res.status(200).json({ success: 'Account  successfuly approved' })
-                                    }else{
-                                               return res.status(200).json({ success: 'Account approval successfuly Revocked' })
+                                    if (data.access === true) {
+                                        return res.status(200).json({ success: 'Account  successfuly approved' })
+                                    } else {
+                                        return res.status(200).json({ success: 'Account approval successfuly Revocked' })
                                     }
-                             
+
                                 } else {
                                     r.release()
                                     return res.status(200).json({ message: 'Unknown error has occured' })
@@ -885,8 +885,8 @@ router.post('/applyUpdate', cors({ origin: '*' }), async (req, res) => {
                             } else {
                                 if (results.rowCount > 0) {
                                     r.release()
-                                               return res.status(200).json({ success: 'Account  successfuly approved' })
-                             
+                                    return res.status(200).json({ success: 'Account  successfuly approved' })
+
                                 } else {
                                     r.release()
                                     return res.status(200).json({ message: 'The Account was not found' })
@@ -947,7 +947,7 @@ router.get('/loadStores', cors({ origin: '*' }), async (req, res) => {
 })
 
 
-    
+
 router.post('/addStore', cors({ origin: '*' }), async (req, res) => {
 
     res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
@@ -958,13 +958,13 @@ router.post('/addStore', cors({ origin: '*' }), async (req, res) => {
     await pool.connect().then(async (r) => {
         if (r._connected) {
             query = 'INSERT INTO tb_linked_store(uac_id,store_number,redirector) VALUES($1,$2,$3)'
-            r.query(query,[data.user,data.store,data.redirector], (error, results) => {
+            r.query(query, [data.user, data.store, data.redirector], (error, results) => {
                 if (error) {
                     console.log(error)
                     r.release()
                     res.status(201).json({ message: error.detail })
                 } else {
-                    if (results.rowCount> 0) {
+                    if (results.rowCount > 0) {
                         r.release()
                         return res.status(200).json({ success: 'Store successfuly mounted' })
                     } else {
@@ -987,7 +987,7 @@ router.post('/addStore', cors({ origin: '*' }), async (req, res) => {
 
 
 
-   
+
 router.post('/unlinkStore', cors({ origin: '*' }), async (req, res) => {
 
     res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
@@ -998,13 +998,13 @@ router.post('/unlinkStore', cors({ origin: '*' }), async (req, res) => {
     await pool.connect().then(async (r) => {
         if (r._connected) {
             query = `DELETE FROM tb_linked_store WHERE uac_id=$1 AND store_number=$2`
-            r.query(query,[data.user,data.store], (error, results) => {
+            r.query(query, [data.user, data.store], (error, results) => {
                 if (error) {
                     console.log(error)
                     r.release()
                     res.status(201).json({ message: error.detail })
                 } else {
-                    if (results.rowCount> 0) {
+                    if (results.rowCount > 0) {
                         r.release()
                         return res.status(200).json({ success: 'Store has been unliked successfuly' })
                     } else {
@@ -1023,7 +1023,7 @@ router.post('/unlinkStore', cors({ origin: '*' }), async (req, res) => {
 
 })
 
-  
+
 router.post('/authAccount', cors({ origin: '*' }), async (req, res) => {
 
     res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
@@ -1034,13 +1034,13 @@ router.post('/authAccount', cors({ origin: '*' }), async (req, res) => {
     await pool.connect().then(async (r) => {
         if (r._connected) {
             query = `UPDATE tb_linked_store SET authorise=$1 WHERE uac_id=$2 AND store_number=$3`
-            r.query(query,[true,data.user,data.store], (error, results) => {
+            r.query(query, [true, data.user, data.store], (error, results) => {
                 if (error) {
                     console.log(error)
                     r.release()
                     res.status(201).json({ message: error.detail })
                 } else {
-                    if (results.rowCount> 0) {
+                    if (results.rowCount > 0) {
                         r.release()
                         return res.status(200).json({ success: 'Access has been granted successfuly' })
                     } else {
@@ -1068,13 +1068,13 @@ router.post('/declineAccess', cors({ origin: '*' }), async (req, res) => {
     await pool.connect().then(async (r) => {
         if (r._connected) {
             query = `UPDATE tb_linked_store SET authorise=$1 WHERE uac_id=$2 AND store_number=$3`
-            r.query(query,[false,data.user,data.store], (error, results) => {
+            r.query(query, [false, data.user, data.store], (error, results) => {
                 if (error) {
                     console.log(error)
                     r.release()
                     res.status(201).json({ message: error.detail })
                 } else {
-                    if (results.rowCount> 0) {
+                    if (results.rowCount > 0) {
                         r.release()
                         return res.status(200).json({ success: 'Store has been revocked successfuly' })
                     } else {
@@ -1091,5 +1091,136 @@ router.post('/declineAccess', cors({ origin: '*' }), async (req, res) => {
 
 })
 
+// 
+
+router.post('/loadUserStores', cors({ origin: '*' }), async (req, res) => {
+
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            query = `SELECT stores.storenumber,stores.storename,tb_department.departement_name FROM stores LEFT JOIN uacp ON stores.storenumber = uacp.hooked_store 
+            LEFT JOIN tb_department  ON uacp.hooked_department=tb_department.hoid WHERE uacp.uac_id = $1`
+            r.query(query, [data.user], (error, results) => {
+                if (error) {
+                    console.log(error)
+                    r.release()
+                    res.status(201).json({ message: error.detail })
+                } else {
+                    if (results.rows.length > 0) {
+                     
+                        const previous_store = results.rows
+                
+                        query = 'SELECT storenumber, storename, storetype FROM stores'
+                        r.query(query, (error, results) => {
+                            if (error) {
+                                console.log(error)
+                                r.release()
+                                res.status(201).json({ message: error.detail })
+                            } else {
+                                if (results.rows.length > 0) {
+                                    r.release()
+                                    return res.status(200).json({ data: results.rows,previous_store:previous_store })
+                                } else {
+                                    r.release()
+                                    return res.status(200).json({ messsage: 'No Stores Avaialble. Create a store.' })
+                                }
+                            }
+                        })
+
+                    }else{
+                        r.release()
+                        return res.status(200).json({ message: 'This account has no associated stores.' })
+                    }
+                }
+            })
+
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Failed to connect to the database' })
+        }
+    })
+
+})
+// 
+
+
+router.post('/replaceStore', cors({ origin: '*' }), async (req, res) => {
+
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    let data = req.body
+   console.log(data)
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+            r.query('BEGIN')
+            query = `UPDATE uacp SET hooked_store=$1 WHERE uac_id=$2 AND hooked_store=$3`
+            r.query(query, [data.new_store, data.user, data.previous_store], (error, results) => {
+                if (error) {
+                    console.log(error)
+                       r.query('ROLLBACK')
+                    r.release()
+                    res.status(201).json({ messsage: error.detail })
+                } else {
+                    if (results.rowCount > 0) {
+                        console.log('Store has been replaced successfuly')
+                        query='SELECT hoid FROM tb_department WHERE hooked_store=$1'
+                        r.query(query,[data.new_store],(error,results)=>{
+                            if(error){
+                                console.log(error)
+                                r.query('ROLLBACK')
+                                r.release()
+                                res.status(201).json({ messsage: error.detail })
+                            }else{
+                                if(results.rows.length>0){
+                                             console.log('Store has been replaced successfuly*******')
+                                    const new_department=results.rows[0].hoid
+                                    query='UPDATE uacp SET hooked_department=$1 WHERE uac_id=$2 AND hooked_store=$3'
+                                    r.query(query,[new_department,data.user,data.new_store],(error,results)=>{
+                                        if(error){
+                                            console.log(error)
+                                            r.query('ROLLBACK')
+                                            r.release()
+                                            res.status(201).json({ messsage: error.detail })
+                                        }else{
+                                            if(results.rowCount>0){
+                                               
+                                                r.query('COMMIT')
+                                                r.release()
+                                                return res.status(200).json({ success: 'Store has been replaced successfuly' })
+                                            }else{
+                                       
+                                                r.query('ROLLBACK')
+                                                r.release()
+                                                return res.status(200).json({ messsage: 'Operation has failed. trye again.' })
+                                            }
+                                        }
+                                    })
+                                }else{
+                             
+                                    r.query('ROLLBACK')
+                                    r.release()
+                                    return res.status(200).json({ messsage: 'The selected store has not been assigned to a department' })
+                                }
+                            }
+                        });
+                    } else {
+                        r.query('ROLLBACK')
+                        r.release()
+                        return res.status(200).json({ messsage: 'Operation has failed. trye again.' })
+                    }
+                }
+            })
+        } else {
+            r.release()
+            return res.status(201).json({ messsage: 'Failed to connect to the database' })
+        }
+    })
+
+})
 
 module.exports = router
