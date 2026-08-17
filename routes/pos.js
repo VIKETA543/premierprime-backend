@@ -1518,8 +1518,9 @@ router.post('/makePayment', cors({ origin: '*' }), async (req, res) => {
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
     await pool.connect().then(async (r) => {
-        console.log(data)
+
         if (r._connected) {
+r.query('BEGIN')
             try {
                 let type = data.salesType
                 switch (type) {
@@ -1528,6 +1529,7 @@ router.post('/makePayment', cors({ origin: '*' }), async (req, res) => {
                         r.query(query, [true, data.payment_progress, data.isFullpayment, data.invoinceNumber], (error, results) => {
                             if (error) {
                                 console.log(error)
+                                r.query('ROLLBACK')
                                 r.release()
                                 return res.status(201).json({ message: error })
                             } else {
@@ -1536,6 +1538,7 @@ router.post('/makePayment', cors({ origin: '*' }), async (req, res) => {
                                     r.query(query, [true, data.balance > 0 ? true : false, data.invoinceNumber,], (error, results) => {
                                         if (error) {
                                             console.log(error)
+                                            r.query('ROLLBACK')
                                             r.release()
                                             return res.status(201).json({ message: error })
                                         } else {
@@ -1545,6 +1548,7 @@ router.post('/makePayment', cors({ origin: '*' }), async (req, res) => {
                                                 r.query(query, [data.invoinceNumber], (error, results) => {
                                                     if (error) {
                                                         console.log(error)
+                                                        r.query('ROLLBACK')
                                                         r.release()
                                                         return res.status(201).json({ message: error })
                                                     } else {
@@ -1553,6 +1557,7 @@ router.post('/makePayment', cors({ origin: '*' }), async (req, res) => {
                                                             r.query(query, [false, data.invoinceNumber], (error, results) => {
                                                                 if (error) {
                                                                     console.log(error)
+                                                                    r.query('ROLLBACK')
                                                                     r.release()
                                                                     return res.status(201).json({ message: error })
                                                                 } else {
@@ -1560,14 +1565,50 @@ router.post('/makePayment', cors({ origin: '*' }), async (req, res) => {
                                                                     r.query(query, [data.paymentNumber, data.invoinceNumber, data.salesType, data.amountPaid, data.balance, new Date(), new Date(), true, true], (error, results) => {
                                                                         if (error) {
                                                                             console.log(error)
+                                                                            r.query('ROLLBACK')
                                                                             r.release()
                                                                             return res.status(201).json({ message: error })
                                                                         } else {
                                                                             if (results.rowCount > 0) {
-                                                                                r.release()
-                                                                                return res.status(200).json({ success: "Request success" })
+
+                                                                                query = `SELECT SUM(payment_history.amount_paid) AS totalpaid,invoice_summaries.invoice_total FROM payment_history LEFT JOIN invoice_summaries ON payment_history.invoice_number = invoice_summaries.invoice_number WHERE payment_history.invoice_number=$1 GROUP BY invoice_summaries.invoice_total`
+                                                                                r.query(query, [data.invoinceNumber], (error, results) => {
+                                                                                    if (error) {
+                                                                                        console.log(error)
+                                                                                        r.query('ROLLBACK')
+                                                                                        r.release()
+                                                                                        return res.status(201).json({ message: error })
+                                                                                    } else {
+                                                                                        if (results.rows.length > 0) {
+                                                                                            const totalpaid = results.rows[0].totalpaid
+                                                                                            const invoicetotal = results.rows[0].invoice_total
+                                                                                            const balance = invoicetotal - totalpaid
+                                                                                            query = 'UPDATE invoice_summaries SET amount_paid=$1,balance=$2 WHERE invoice_number=$3'
+                                                                                            r.query(query, [totalpaid, balance, data.invoinceNumber], (error, results) => {
+                                                                                                if (error) {
+                                                                                                    console.log(error)
+                                                                                                    r.query('ROLLBACK')
+                                                                                                    r.release()
+                                                                                                    return res.status(201).json({ message: error })
+                                                                                                } else {
+                                                                                                    console.log('Payment history updated successfully')
+                                                                                                    r.query('COMMIT')
+                                                                                                    r.release()
+                                                                                                    return res.status(200).json({ success: 'Payment history updated successfully' })
+                                                                                                }
+                                                                                            })
+                                                                                        } else {
+                                                                                            console.log('No results found')
+                                                                                            r.query('ROLLBACK')
+                                                                                            r.release()
+                                                                                            return res.status(201).json({ message: 'No payment history found' })
+                                                                                        }
+                                                                                    }
+                                                                                })
+
                                                                             } else {
                                                                                 r.release()
+                                                                                r.query('ROLLBACK')
                                                                                 console.log('Request failed. Try again')
                                                                                 return res.status(200).json({ message: 'Request failed to update payment history' })
                                                                             }
@@ -1581,13 +1622,52 @@ router.post('/makePayment', cors({ origin: '*' }), async (req, res) => {
                                                                 if (error) {
                                                                     console.log(error)
                                                                     r.release()
+                                                                    r.query('ROLLBACK')
                                                                     return res.status(201).json({ message: error })
                                                                 } else {
                                                                     if (results.rowCount > 0) {
-                                                                        r.release()
-                                                                        return res.status(200).json({ success: "Request success" })
+
+
+                                                                        query = `SELECT SUM(payment_history.amount_paid) AS totalpaid,invoice_summaries.invoice_total 
+                                                                                    FROM 
+                                                                                    payment_history LEFT JOIN invoice_summaries ON payment_history.invoice_number = invoice_summaries.invoice_number 
+                                                                                    WHERE payment_history.invoice_number=$1 GROUP BY invoice_summaries.invoice_total`
+                                                                        r.query(query, [data.invoinceNumber], (error, results) => {
+                                                                            if (error) {
+                                                                                console.log(error)
+                                                                                r.query('ROLLBACK')
+                                                                                r.release()
+                                                                                return res.status(201).json({ message: error })
+                                                                            } else {
+                                                                                if (results.rows.length > 0) {
+                                                                                    const totalpaid = results.rows[0].totalpaid
+                                                                                    const invoicetotal = results.rows[0].invoice_total
+                                                                                    const balance = invoicetotal - totalpaid
+                                                                                    query = 'UPDATE invoice_summaries SET amount_paid=$1,balance=$2 WHERE invoice_number=$3'
+                                                                                    r.query(query, [totalpaid, balance, data.invoinceNumber], (error, results) => {
+                                                                                        if (error) {
+                                                                                            console.log(error)
+                                                                                            r.query('ROLLBACK')
+                                                                                            r.release()
+                                                                                            return res.status(201).json({ message: error })
+                                                                                        } else {
+                                                                                            console.log('Payment history updated successfully')
+                                                                                            r.query('COMMIT')
+                                                                                            r.release()
+                                                                                            return res.status(200).json({ success: 'Payment history updated successfully' })
+                                                                                        }
+                                                                                    })
+                                                                                } else {
+                                                                                    console.log('No results found')
+                                                                                    r.query('ROLLBACK')
+                                                                                    r.release()
+                                                                                    return res.status(201).json({ message: 'No payment history found' })
+                                                                                }
+                                                                            }
+                                                                        })
                                                                     } else {
                                                                         r.release()
+                                                                        r.query('ROLLBACK')
                                                                         console.log('Request failed. Try again')
                                                                         return res.status(200).json({ message: 'Request failed to update payment history' })
                                                                     }
@@ -1598,6 +1678,7 @@ router.post('/makePayment', cors({ origin: '*' }), async (req, res) => {
                                                 })
                                             } else {
                                                 r.release()
+                                                r.query('ROLLBACK')
                                                 console.log('Request failed. Try again')
                                                 return res.status(200).json({ message: 'Request failed. Try again' })
                                             }
@@ -1606,6 +1687,7 @@ router.post('/makePayment', cors({ origin: '*' }), async (req, res) => {
                                     })
                                 } else {
                                     r.release()
+                                    r.query('ROLLBACK')
                                     console.log('Invoice has not been initiated. Initiate and Invoice and continue')
                                     return res.status(200).json({ message: 'Payment failed. Invoice has not been initiated.' })
                                 }
@@ -1618,6 +1700,7 @@ router.post('/makePayment', cors({ origin: '*' }), async (req, res) => {
                         r.query(query, [true, data.payment_progress, data.invoinceNumber], (error, results) => {
                             if (error) {
                                 console.log(error)
+                                r.query('ROLLBACK')
                                 r.release()
                                 return res.status(201).json({ message: error })
                             } else {
@@ -1626,12 +1709,16 @@ router.post('/makePayment', cors({ origin: '*' }), async (req, res) => {
                                     r.query(query, [true, data.invoinceNumber], (error, results) => {
                                         if (error) {
                                             console.log(error)
+                                            r.query('ROLLBACK')
                                             r.release()
                                             return res.status(201).json({ message: error })
                                         } else {
                                             if (results.rowCount > 0) {
+                                                r.query('COMMIT')
+                                                r.release()
                                                 return res.status(200).json({ success: 'Request was successful' })
                                             } else {
+                                                r.query('ROLLBACK')
                                                 r.release()
                                                 console.log('Request failed. Try again')
                                                 return res.status(200).json({ message: 'Request failed. Try again' })
@@ -1641,17 +1728,24 @@ router.post('/makePayment', cors({ origin: '*' }), async (req, res) => {
                                     })
                                 } else {
                                     r.release()
+                                    r.query('ROLLBACK')
                                     console.log('Invoice has not been initiated. Initiate and Invoice and continue')
                                     return res.status(200).json({ message: 'Payment failed. Invoice has not been initiated.' })
                                 }
                             }
                         })
                         break;
+
                     default: return res.status(201).json({ message: 'This invoice is not available for verification' })
+                    r.query('ROLLBACK')
+                    r.release()
+                    break;
                 }
 
             } catch (error) {
+                r.query('ROLLBACK')
                 r.release()
+
                 return res.status(201).json({ message: error })
                 console.log(error)
             }
@@ -1852,9 +1946,21 @@ router.post('/loadcreditInvoices', cors({ origin: '*' }), async (req, res) => {
                 if (results.rows.length > 0) {
                     const rws = results.rows[0].sales_type.trim()
                     console.log('Sales type', rws)
-                    query = "SELECT tb_credit_invoice_summary.invoice_number,tb_credit_invoice_summary.payment_progress, tb_credit_invoice_summary.invoice_total,tb_credit_invoice_summary.dateposted, tb_credit_invoice_summary.isinvoice_verified, tb_credit_invoice_summary.sales_type," +
-                        "  tb_credit_sale_invoice.customername, tb_credit_sale_invoice.telephone, tb_credit_sale_invoice.emailaddress, tb_credit_sale_invoice.address " +
-                        " FROM tb_credit_invoice_summary LEFT JOIN tb_credit_sale_invoice ON tb_credit_invoice_summary.invoice_number = tb_credit_sale_invoice.invoice_number WHERE tb_credit_invoice_summary.invoice_number=$1 "
+                    query = `SELECT tb_credit_invoice_summary.invoice_number,
+                    tb_credit_invoice_summary.payment_progress,
+                     tb_credit_invoice_summary.invoice_total,
+                     tb_credit_invoice_summary.dateposted, 
+                     tb_credit_invoice_summary.isinvoice_verified,
+                      tb_credit_invoice_summary.sales_type,
+                         tb_credit_sale_invoice.customername, 
+                         tb_credit_sale_invoice.telephone,
+                          tb_credit_sale_invoice.emailaddress, 
+                          tb_credit_sale_invoice.address 
+                        FROM
+                         tb_credit_invoice_summary
+                          LEFT JOIN
+                           tb_credit_sale_invoice ON tb_credit_invoice_summary.invoice_number = tb_credit_sale_invoice.invoice_number
+                            WHERE tb_credit_invoice_summary.invoice_number=$1 `
                     r.query(query, [data.invoinceNumber], (error, results) => {
                         if (error) {
                             console.log(error)
@@ -1918,10 +2024,14 @@ router.post('/loadcreditInvoices', cors({ origin: '*' }), async (req, res) => {
                             } else {
                                 r.release()
                                 console.log('Invoice not found')
-                                res.status(200).json({ message: 'Invoice not found****' })
+                                res.status(200).json({ message: 'Invoice not found' })
                             }
                         }
                     })
+                }else{
+                    r.release()
+                    console.log('Invoice not found')
+                    res.status(200).json({ message: 'Invoice not found' })
                 }
             }
         })
@@ -1944,10 +2054,12 @@ router.post('/makecreditpayment', cors({ origin: '*' }), async (req, res) => {
                 let type = data.salesType
                 switch (type) {
                     case "CREDIT_SALES":
+                        r.query('BEGIN')
                         query = 'UPDATE tb_credit_invoice_summary SET isinvoice_verified=$1,payment_progress=$2,is_payment_complete=$3  WHERE invoice_number=$4 '
                         r.query(query, [true, data.payment_progress, data.isFullpayment, data.invoinceNumber], (error, results) => {
                             if (error) {
                                 console.log(error)
+                                r.query('ROLLBACK')
                                 r.release()
                                 return res.status(201).json({ message: error })
                             } else {
@@ -1956,6 +2068,7 @@ router.post('/makecreditpayment', cors({ origin: '*' }), async (req, res) => {
                                     r.query(query, [true, data.invoinceNumber], (error, results) => {
                                         if (error) {
                                             console.log(error)
+                                            r.query('ROLLBACK')
                                             r.release()
                                             return res.status(201).json({ message: error })
                                         } else {
@@ -1965,6 +2078,7 @@ router.post('/makecreditpayment', cors({ origin: '*' }), async (req, res) => {
                                                 r.query(query, [data.invoinceNumber], (error, results) => {
                                                     if (error) {
                                                         console.log(error)
+                                                        r.query('ROLLBACK')
                                                         r.release()
                                                         return res.status(201).json({ message: error })
                                                     } else {
@@ -1973,6 +2087,7 @@ router.post('/makecreditpayment', cors({ origin: '*' }), async (req, res) => {
                                                             r.query(query, [false, data.invoinceNumber], (error, results) => {
                                                                 if (error) {
                                                                     console.log(error)
+                                                                    r.query('ROLLBACK')
                                                                     r.release()
                                                                     return res.status(201).json({ message: error })
                                                                 } else {
@@ -1980,14 +2095,52 @@ router.post('/makecreditpayment', cors({ origin: '*' }), async (req, res) => {
                                                                     r.query(query, [data.paymentNumber, data.invoinceNumber, data.salesType, data.amountPaid, data.balance, new Date(), new Date(), true, true], (error, results) => {
                                                                         if (error) {
                                                                             console.log(error)
+                                                                            r.query('ROLLBACK')
                                                                             r.release()
                                                                             return res.status(201).json({ message: error })
                                                                         } else {
                                                                             if (results.rowCount > 0) {
+                                                                               
+                                                                        query = `SELECT SUM(payment_history.amount_paid) AS totalpaid,invoice_summaries.invoice_total 
+                                                                                    FROM 
+                                                                                    payment_history LEFT JOIN invoice_summaries ON payment_history.invoice_number = invoice_summaries.invoice_number 
+                                                                                    WHERE payment_history.invoice_number=$1 GROUP BY invoice_summaries.invoice_total`
+                                                                        r.query(query, [data.invoinceNumber], (error, results) => {
+                                                                            if (error) {
+                                                                                console.log(error)
+                                                                                r.query('ROLLBACK')
                                                                                 r.release()
-                                                                                return res.status(200).json({ success: "Request success" })
+                                                                                return res.status(201).json({ message: error })
+                                                                            } else {
+                                                                                if (results.rows.length > 0) {
+                                                                                    const totalpaid = results.rows[0].totalpaid
+                                                                                    const invoicetotal = results.rows[0].invoice_total
+                                                                                    const balance = invoicetotal - totalpaid
+                                                                                    query = 'UPDATE invoice_summaries SET amount_paid=$1,balance=$2 WHERE invoice_number=$3'
+                                                                                    r.query(query, [totalpaid, balance, data.invoinceNumber], (error, results) => {
+                                                                                        if (error) {
+                                                                                            console.log(error)
+                                                                                            r.query('ROLLBACK')
+                                                                                            r.release()
+                                                                                            return res.status(201).json({ message: error })
+                                                                                        } else {
+                                                                                            console.log('Payment history updated successfully')
+                                                                                            r.query('COMMIT')
+                                                                                            r.release()
+                                                                                            return res.status(200).json({ success: 'Payment history updated successfully' })
+                                                                                        }
+                                                                                    })
+                                                                                } else {
+                                                                                    console.log('No results found')
+                                                                                    r.query('ROLLBACK')
+                                                                                    r.release()
+                                                                                    return res.status(201).json({ message: 'No payment history found' })
+                                                                                }
+                                                                            }
+                                                                        })
                                                                             } else {
                                                                                 r.release()
+                                                                                r.query('ROLLBACK')
                                                                                 console.log('Request failed. Try again')
                                                                                 return res.status(200).json({ message: 'Request failed to update payment history' })
                                                                             }
@@ -2000,13 +2153,52 @@ router.post('/makecreditpayment', cors({ origin: '*' }), async (req, res) => {
                                                             r.query(query, [data.paymentNumber, data.invoinceNumber, data.salesType, data.amountPaid, data.balance, new Date(), new Date(), true, true], (error, results) => {
                                                                 if (error) {
                                                                     console.log(error)
+                                                                    r.query('ROLLBACK')
                                                                     r.release()
+
                                                                     return res.status(201).json({ message: error })
                                                                 } else {
                                                                     if (results.rowCount > 0) {
-                                                                        r.release()
-                                                                        return res.status(200).json({ success: "Request success" })
+                                                                      
+                                                                        query = `SELECT SUM(payment_history.amount_paid) AS totalpaid,invoice_summaries.invoice_total 
+                                                                                    FROM 
+                                                                                    payment_history LEFT JOIN invoice_summaries ON payment_history.invoice_number = invoice_summaries.invoice_number 
+                                                                                    WHERE payment_history.invoice_number=$1 GROUP BY invoice_summaries.invoice_total`
+                                                                        r.query(query, [data.invoinceNumber], (error, results) => {
+                                                                            if (error) {
+                                                                                console.log(error)
+                                                                                r.query('ROLLBACK')
+                                                                                r.release()
+                                                                                return res.status(201).json({ message: error })
+                                                                            } else {
+                                                                                if (results.rows.length > 0) {
+                                                                                    const totalpaid = results.rows[0].totalpaid
+                                                                                    const invoicetotal = results.rows[0].invoice_total
+                                                                                    const balance = invoicetotal - totalpaid
+                                                                                    query = 'UPDATE invoice_summaries SET amount_paid=$1,balance=$2 WHERE invoice_number=$3'
+                                                                                    r.query(query, [totalpaid, balance, data.invoinceNumber], (error, results) => {
+                                                                                        if (error) {
+                                                                                            console.log(error)
+                                                                                            r.query('ROLLBACK')
+                                                                                            r.release()
+                                                                                            return res.status(201).json({ message: error })
+                                                                                        } else {
+                                                                                            console.log('Payment history updated successfully')
+                                                                                            r.query('COMMIT')
+                                                                                            r.release()
+                                                                                            return res.status(200).json({ success: 'Payment history updated successfully' })
+                                                                                        }
+                                                                                    })
+                                                                                } else {
+                                                                                    console.log('No results found')
+                                                                                    r.query('ROLLBACK')
+                                                                                    r.release()
+                                                                                    return res.status(201).json({ message: 'No payment history found' })
+                                                                                }
+                                                                            }
+                                                                        })
                                                                     } else {
+                                                                        r.query('ROLLBACK')
                                                                         r.release()
                                                                         console.log('Request failed. Try again')
                                                                         return res.status(200).json({ message: 'Request failed to update payment history' })
@@ -2017,6 +2209,7 @@ router.post('/makecreditpayment', cors({ origin: '*' }), async (req, res) => {
                                                     }
                                                 })
                                             } else {
+                                                r.query('ROLLBACK')
                                                 r.release()
                                                 console.log('Request failed. Try again')
                                                 return res.status(200).json({ message: 'Request failed. Try again' })
@@ -2025,6 +2218,7 @@ router.post('/makecreditpayment', cors({ origin: '*' }), async (req, res) => {
 
                                     })
                                 } else {
+                                    r.query('ROLLBACK')
                                     r.release()
                                     console.log('Invoice has not been initiated. Initiate and Invoice and continue')
                                     return res.status(200).json({ message: 'Payment failed. Invoice has not been initiated.' })
@@ -2040,6 +2234,7 @@ router.post('/makecreditpayment', cors({ origin: '*' }), async (req, res) => {
 
             } catch (error) {
                 r.release()
+                r.query('ROLLBACK')
                 return res.status(201).json({ message: error })
                 console.log(error)
             }
@@ -2401,18 +2596,22 @@ router.post('/loadotherprices', cors({ origin: '*' }), async (req, res) => {
 
 
 router.post('/daily_payment_history', cors({ origin: '*' }), async (req, res) => {
- res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
     await pool.connect().then(async (r) => {
         let data = req.body
-         console.log(data.dated);
-        if (r._connected) { 
+        console.log(data.dated);
+        if (r._connected) {
             const customOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
             let formattedDate = new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated)
             console.log(new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated));
-            try { 
-                query = `SELECT invoice_number,invoice_total,isinvoice_verified,sales_type,dateposted,store_verified FROM invoice_summaries WHERE dateposted=$1`;
+            try {
+                query = `SELECT invoice_number,invoice_total,amount_paid,balance,isinvoice_verified,sales_type,dateposted,store_verified FROM invoice_summaries WHERE dateposted=$1
+                UNION
+                SELECT invoice_number,invoice_total,amount_paid,balance,isinvoice_verified,sales_type,dateposted,store_verified FROM tb_credit_invoice_summary WHERE dateposted=$1
+        
+                `;
 
                 r.query(query, [formattedDate], (error, results) => {
                     if (error) {
@@ -2447,17 +2646,17 @@ router.post('/daily_payment_history', cors({ origin: '*' }), async (req, res) =>
 
 
 router.post('/myStores', cors({ origin: '*' }), async (req, res) => {
- res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
     await pool.connect().then(async (r) => {
         let data = req.body
-         console.log(data.user);
-        if (r._connected) { 
+        console.log(data.user);
+        if (r._connected) {
             // const customOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
             // let formattedDate = new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated)
             // console.log(new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated));
-            try { 
+            try {
                 query = `SELECT tb_linked_store.store_number,tb_linked_store.redirector,tb_linked_store.authorise,stores.storename,stores.storenumber,stores.storetype 
                 FROM tb_linked_store 
                 LEFT JOIN  stores ON tb_linked_store.store_number=stores.storenumber WHERE tb_linked_store.uac_id=$1 `;
