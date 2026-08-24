@@ -1520,7 +1520,7 @@ router.post('/makePayment', cors({ origin: '*' }), async (req, res) => {
     await pool.connect().then(async (r) => {
 
         if (r._connected) {
-r.query('BEGIN')
+            r.query('BEGIN')
             try {
                 let type = data.salesType
                 switch (type) {
@@ -1737,9 +1737,9 @@ r.query('BEGIN')
                         break;
 
                     default: return res.status(201).json({ message: 'This invoice is not available for verification' })
-                    r.query('ROLLBACK')
-                    r.release()
-                    break;
+                        r.query('ROLLBACK')
+                        r.release()
+                        break;
                 }
 
             } catch (error) {
@@ -1860,7 +1860,10 @@ router.post('/loadPaymentReceipt', cors({ origin: '*' }), async (req, res) => {
                                     break;
                                 case "CREDIT_SALES":
 
-                                    query = "SELECT tb_credit_invoice_summary.invoice_number,tb_credit_invoice_summary.payment_progress, tb_credit_invoice_summary.invoice_total, tb_credit_invoice_summary.dateposted, tb_credit_invoice_summary.isinvoice_verified, tb_credit_invoice_summary.sales_type, tb_credit_sale_invoice.customername, tb_credit_sale_invoice.telephone, tb_credit_sale_invoice.emailaddress, tb_credit_sale_invoice.address FROM tb_credit_invoice_summary LEFT JOIN tb_credit_sale_invoice ON tb_credit_invoice_summary.invoice_number = tb_credit_sale_invoice.invoice_number WHERE tb_credit_invoice_summary.invoice_number=$1 AND tb_credit_invoice_summary.isinvoice_verified=$2 AND full_payment=$3 "
+                                    query = `SELECT tb_credit_invoice_summary.invoice_number,
+                                    tb_credit_invoice_summary.payment_progress,
+                                     tb_credit_invoice_summary.invoice_total,
+                                      tb_credit_invoice_summary.dateposted, tb_credit_invoice_summary.amount_paid,tb_credit_invoice_summary.balance,tb_credit_invoice_summary.isinvoice_verified, tb_credit_invoice_summary.sales_type, tb_credit_sale_invoice.customername, tb_credit_sale_invoice.telephone, tb_credit_sale_invoice.emailaddress, tb_credit_sale_invoice.address FROM tb_credit_invoice_summary LEFT JOIN tb_credit_sale_invoice ON tb_credit_invoice_summary.invoice_number = tb_credit_sale_invoice.invoice_number WHERE tb_credit_invoice_summary.invoice_number=$1 AND tb_credit_invoice_summary.isinvoice_verified=$2 AND full_payment=$3 `
                                     r.query(query, [data.invoinceNumber, true, false], (error, results) => {
                                         if (error) {
                                             console.log(error)
@@ -1870,6 +1873,9 @@ router.post('/loadPaymentReceipt', cors({ origin: '*' }), async (req, res) => {
                                             if (results.rows.length > 0) {
                                                 console.log(results.rows)
                                                 const invoicesum = results.rows
+                                                const payment = results.rows[0].amount_paid
+                                                const balance = results.rows[0].balance
+
                                                 query = "SELECT tb_credit_sales.quantity_sold,tb_credit_sales.unit_price, tb_credit_sales.total_price,tb_credit_sales.store_number, products.name,productbrand.title FROM tb_credit_sales LEFT JOIN products ON tb_credit_sales.product_number = products.serialnumber LEFT JOIN productbrand ON tb_credit_sales.product_brand = productbrand.brandid WHERE tb_credit_sales.invoice_number=$1 AND isinvoice_verified=$2 "
                                                 r.query(query, [data.invoinceNumber, true], (error, results) => {
                                                     if (error) {
@@ -1879,7 +1885,7 @@ router.post('/loadPaymentReceipt', cors({ origin: '*' }), async (req, res) => {
                                                         if (results.rows.length > 0) {
                                                             const invoiceitems = results.rows
                                                             r.release()
-                                                            res.status(200).json({ invoicesum, invoiceitems, rws, sumpaid: [{ sumpaid: '0' }], isQuote: true })
+                                                            res.status(200).json({ invoicesum, invoiceitems, rws, sumpaid: payment, balance: balance, isQuote: true })
                                                         } else {
                                                             r.release()
                                                             res.status(200).json({ message: 'Invoice quote not found' })
@@ -2028,7 +2034,7 @@ router.post('/loadcreditInvoices', cors({ origin: '*' }), async (req, res) => {
                             }
                         }
                     })
-                }else{
+                } else {
                     r.release()
                     console.log('Invoice not found')
                     res.status(200).json({ message: 'Invoice not found' })
@@ -2100,44 +2106,45 @@ router.post('/makecreditpayment', cors({ origin: '*' }), async (req, res) => {
                                                                             return res.status(201).json({ message: error })
                                                                         } else {
                                                                             if (results.rowCount > 0) {
-                                                                               
-                                                                        query = `SELECT SUM(payment_history.amount_paid) AS totalpaid,invoice_summaries.invoice_total 
+
+                                                                                query = `SELECT SUM(payment_history.amount_paid) AS totalpaid,tb_credit_invoice_summary.invoice_total 
                                                                                     FROM 
-                                                                                    payment_history LEFT JOIN invoice_summaries ON payment_history.invoice_number = invoice_summaries.invoice_number 
-                                                                                    WHERE payment_history.invoice_number=$1 GROUP BY invoice_summaries.invoice_total`
-                                                                        r.query(query, [data.invoinceNumber], (error, results) => {
-                                                                            if (error) {
-                                                                                console.log(error)
-                                                                                r.query('ROLLBACK')
-                                                                                r.release()
-                                                                                return res.status(201).json({ message: error })
-                                                                            } else {
-                                                                                if (results.rows.length > 0) {
-                                                                                    const totalpaid = results.rows[0].totalpaid
-                                                                                    const invoicetotal = results.rows[0].invoice_total
-                                                                                    const balance = invoicetotal - totalpaid
-                                                                                    query = 'UPDATE invoice_summaries SET amount_paid=$1,balance=$2 WHERE invoice_number=$3'
-                                                                                    r.query(query, [totalpaid, balance, data.invoinceNumber], (error, results) => {
-                                                                                        if (error) {
-                                                                                            console.log(error)
+                                                                                    payment_history LEFT JOIN tb_credit_invoice_summary ON payment_history.invoice_number = tb_credit_invoice_summary.invoice_number 
+                                                                                    WHERE payment_history.invoice_number=$1 GROUP BY tb_credit_invoice_summary.invoice_total`
+                                                                                r.query(query, [data.invoinceNumber], (error, results) => {
+                                                                                    if (error) {
+                                                                                        console.log(error)
+                                                                                        r.query('ROLLBACK')
+                                                                                        r.release()
+                                                                                        return res.status(201).json({ message: error })
+                                                                                    } else {
+                                                                                        if (results.rows.length > 0) {
+                                                                                            const totalpaid = results.rows[0].totalpaid
+                                                                                            const invoicetotal = results.rows[0].invoice_total
+                                                                                            const balance = invoicetotal - totalpaid
+                                                                                            console.log('Total paid:', totalpaid, 'Invoice total:', invoicetotal, 'Balance:', balance)
+                                                                                            query = 'UPDATE tb_credit_invoice_summary SET amount_paid=$1,balance=$2 WHERE invoice_number=$3'
+                                                                                            r.query(query, [totalpaid, balance, data.invoinceNumber], (error, results) => {
+                                                                                                if (error) {
+                                                                                                    console.log(error)
+                                                                                                    r.query('ROLLBACK')
+                                                                                                    r.release()
+                                                                                                    return res.status(201).json({ message: error })
+                                                                                                } else {
+                                                                                                    console.log('Payment history updated successfully')
+                                                                                                    r.query('COMMIT')
+                                                                                                    r.release()
+                                                                                                    return res.status(200).json({ success: 'Payment history updated successfully' })
+                                                                                                }
+                                                                                            })
+                                                                                        } else {
+                                                                                            console.log('No results found')
                                                                                             r.query('ROLLBACK')
                                                                                             r.release()
-                                                                                            return res.status(201).json({ message: error })
-                                                                                        } else {
-                                                                                            console.log('Payment history updated successfully')
-                                                                                            r.query('COMMIT')
-                                                                                            r.release()
-                                                                                            return res.status(200).json({ success: 'Payment history updated successfully' })
+                                                                                            return res.status(201).json({ message: 'No payment history found' })
                                                                                         }
-                                                                                    })
-                                                                                } else {
-                                                                                    console.log('No results found')
-                                                                                    r.query('ROLLBACK')
-                                                                                    r.release()
-                                                                                    return res.status(201).json({ message: 'No payment history found' })
-                                                                                }
-                                                                            }
-                                                                        })
+                                                                                    }
+                                                                                })
                                                                             } else {
                                                                                 r.release()
                                                                                 r.query('ROLLBACK')
@@ -2159,11 +2166,11 @@ router.post('/makecreditpayment', cors({ origin: '*' }), async (req, res) => {
                                                                     return res.status(201).json({ message: error })
                                                                 } else {
                                                                     if (results.rowCount > 0) {
-                                                                      
-                                                                        query = `SELECT SUM(payment_history.amount_paid) AS totalpaid,invoice_summaries.invoice_total 
+
+                                                                        query = `SELECT SUM(payment_history.amount_paid) AS totalpaid,tb_credit_invoice_summary.invoice_total 
                                                                                     FROM 
-                                                                                    payment_history LEFT JOIN invoice_summaries ON payment_history.invoice_number = invoice_summaries.invoice_number 
-                                                                                    WHERE payment_history.invoice_number=$1 GROUP BY invoice_summaries.invoice_total`
+                                                                                    payment_history LEFT JOIN tb_credit_invoice_summary ON payment_history.invoice_number = tb_credit_invoice_summary.invoice_number 
+                                                                                    WHERE payment_history.invoice_number=$1 GROUP BY tb_credit_invoice_summary.invoice_total`
                                                                         r.query(query, [data.invoinceNumber], (error, results) => {
                                                                             if (error) {
                                                                                 console.log(error)
@@ -2175,7 +2182,8 @@ router.post('/makecreditpayment', cors({ origin: '*' }), async (req, res) => {
                                                                                     const totalpaid = results.rows[0].totalpaid
                                                                                     const invoicetotal = results.rows[0].invoice_total
                                                                                     const balance = invoicetotal - totalpaid
-                                                                                    query = 'UPDATE invoice_summaries SET amount_paid=$1,balance=$2 WHERE invoice_number=$3'
+                                                                                    console.log('Total paid:', totalpaid, 'Invoice total:', invoicetotal, 'Balance:', balance)
+                                                                                    query = 'UPDATE tb_credit_invoice_summary SET amount_paid=$1,balance=$2 WHERE invoice_number=$3'
                                                                                     r.query(query, [totalpaid, balance, data.invoinceNumber], (error, results) => {
                                                                                         if (error) {
                                                                                             console.log(error)
@@ -2689,5 +2697,170 @@ router.post('/myStores', cors({ origin: '*' }), async (req, res) => {
         }
     })
 })
+
+
+
+
+
+
+
+
+router.post('/getSalesReport', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    await pool.connect().then(async (r) => {
+        let data = req.body
+        console.log(data)
+        if (r._connected) {
+
+            // const customOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
+
+
+
+            const startDate = data.startDate;
+            const endDate = data.endDate;
+            try {
+                query = `SELECT
+                        ca.product_number,
+                        COUNT(ca.product_brand) AS total_sold,
+                        SUM(ca.quantity_sold) AS quantity_sold,
+                        SUM(ca.total_price) AS sum_total_amount,
+                        p.name,asi.sales_type, 
+                        br.title
+                        FROM tb_cash_sales ca
+                        LEFT JOIN products p ON p.serialnumber = ca.product_number
+                        LEFT JOIN productbrand br ON br.brandid = ca.product_brand
+                        LEFT JOIN tb_all_sales_invoices asi ON ca.invoice_number=asi.invoice_number
+                        WHERE ca.dateposted BETWEEN $1 AND $2 
+                        GROUP BY ca.product_number, ca.product_brand, p.name, br.title,asi.sales_type
+
+                        UNION ALL
+
+                        SELECT
+                        cr.product_number,
+                        COUNT(cr.product_brand) AS total_sold,
+                        SUM(cr.quantity_sold) AS quantity_sold,
+                        SUM(cr.total_price) AS sum_total_amount,
+                        p.name, asi.sales_type, 
+                        br.title 
+                        FROM tb_credit_sales cr 
+                        LEFT JOIN products p ON p.serialnumber = cr.product_number
+                        LEFT JOIN productbrand br ON br.brandid = cr.product_brand
+                             LEFT JOIN tb_all_sales_invoices asi ON cr.invoice_number=asi.invoice_number
+                        WHERE cr.dateposted BETWEEN $1 AND $2 
+                        GROUP BY cr.product_number, cr.product_brand, p.name, br.title,asi.sales_type
+
+                        ORDER BY product_number; `;
+                r.query(query, [startDate, endDate], (error, results) => {
+                    if (error) {
+                        r.release()
+                        console.log(error)
+                        return res.status(201).json({ message: error })
+                    } else {
+                        if (results.rows.length > 0) {
+                            console.log(results.rows)
+                            r.release()
+                            return res.status(200).json({ data: results.rows })
+                        } else {
+                            r.release()
+                            console.log('no invoice found')
+                            res.status(201).json({ message: 'No invoice today' })
+                        }
+                    }
+                })
+
+            } catch (error) {
+                r.release()
+                return res.status(201).json({ message: error })
+     
+            }
+        } else {
+            r.release()
+            console.log('Database connection failed')
+            return res.status(201).json({ message: 'Database Connection failed' })
+        }
+    })
+})
+
+
+
+
+
+
+
+router.post('/getCurrent', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    await pool.connect().then(async (r) => {
+        let data = req.body
+        console.log(data)
+        if (r._connected) {
+            const startDate = data.startDate;
+   
+            try {
+               query = `SELECT
+            ca.product_number,
+            COUNT(ca.product_brand) AS total_sold,
+            SUM(ca.quantity_sold) AS quantity_sold,
+            SUM(ca.total_price) AS sum_total_amount,
+            p.name,
+            asi.sales_type, 
+            br.title
+        FROM tb_cash_sales ca
+        LEFT JOIN products p ON p.serialnumber = ca.product_number
+        LEFT JOIN productbrand br ON br.brandid = ca.product_brand
+        LEFT JOIN tb_all_sales_invoices asi ON ca.invoice_number = asi.invoice_number
+        WHERE ca.dateposted = $1  
+        GROUP BY ca.product_number, ca.product_brand, p.name, asi.sales_type, br.title
+
+        UNION ALL
+
+        SELECT
+            cr.product_number,
+            COUNT(cr.product_brand) AS total_sold,
+            SUM(cr.quantity_sold) AS quantity_sold,
+            SUM(cr.total_price) AS sum_total_amount,
+            p.name, 
+            asi.sales_type, 
+            br.title 
+        FROM tb_credit_sales cr 
+        LEFT JOIN products p ON p.serialnumber = cr.product_number
+        LEFT JOIN productbrand br ON br.brandid = cr.product_brand
+        LEFT JOIN tb_all_sales_invoices asi ON cr.invoice_number = asi.invoice_number
+        WHERE cr.dateposted = $1  
+        GROUP BY cr.product_number, cr.product_brand, p.name, asi.sales_type, br.title
+
+        ORDER BY product_number`
+                r.query(query, [startDate], (error, results) => {
+                    if (error) {
+                        r.release()
+                        console.log(error)
+                        return res.status(201).json({ message: error })
+                    } else {
+                        if (results.rows.length > 0) {
+                            console.log(results.rows)
+                            r.release()
+                            return res.status(200).json({ data: results.rows })
+                        } else {
+                            r.release()
+                            res.status(201).json({ message: 'No Sales Yet' })
+                        }
+                    }
+                })
+
+            } catch (error) {
+                r.release()
+                return res.status(201).json({ message: error })
+            }
+        } else {
+            r.release()
+   
+            return res.status(201).json({ message: 'Database Connection failed' })
+        }
+    })
+})
+
 
 module.exports = router
