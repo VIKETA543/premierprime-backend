@@ -2773,7 +2773,7 @@ router.post('/getSalesReport', cors({ origin: '*' }), async (req, res) => {
             } catch (error) {
                 r.release()
                 return res.status(201).json({ message: error })
-     
+
             }
         } else {
             r.release()
@@ -2798,9 +2798,9 @@ router.post('/getCurrent', cors({ origin: '*' }), async (req, res) => {
         console.log(data)
         if (r._connected) {
             const startDate = data.startDate;
-   
+
             try {
-               query = `SELECT
+                query = `SELECT
             ca.product_number,
             COUNT(ca.product_brand) AS total_sold,
             SUM(ca.quantity_sold) AS quantity_sold,
@@ -2856,7 +2856,421 @@ router.post('/getCurrent', cors({ origin: '*' }), async (req, res) => {
             }
         } else {
             r.release()
-   
+
+            return res.status(201).json({ message: 'Database Connection failed' })
+        }
+    })
+})
+
+
+
+
+
+
+
+
+
+router.post('/getAll', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    await pool.connect().then(async (r) => {
+        let data = req.body
+        console.log(data)
+        if (r._connected) {
+            const startDate = data.startDate;
+
+            try {
+                query = `SELECT
+            ca.product_number,
+            COUNT(ca.product_brand) AS total_sold,
+            SUM(ca.quantity_sold) AS quantity_sold,
+            SUM(ca.total_price) AS sum_total_amount,
+            p.name,
+            asi.sales_type, 
+            br.title
+        FROM tb_cash_sales ca
+        LEFT JOIN products p ON p.serialnumber = ca.product_number
+        LEFT JOIN productbrand br ON br.brandid = ca.product_brand
+        LEFT JOIN tb_all_sales_invoices asi ON ca.invoice_number = asi.invoice_number
+        GROUP BY ca.product_number, ca.product_brand, p.name, asi.sales_type, br.title
+
+        UNION ALL
+
+        SELECT
+            cr.product_number,
+            COUNT(cr.product_brand) AS total_sold,
+            SUM(cr.quantity_sold) AS quantity_sold,
+            SUM(cr.total_price) AS sum_total_amount,
+            p.name, 
+            asi.sales_type, 
+            br.title 
+        FROM tb_credit_sales cr 
+        LEFT JOIN products p ON p.serialnumber = cr.product_number
+        LEFT JOIN productbrand br ON br.brandid = cr.product_brand
+        LEFT JOIN tb_all_sales_invoices asi ON cr.invoice_number = asi.invoice_number
+        GROUP BY cr.product_number, cr.product_brand, p.name, asi.sales_type, br.title
+
+        ORDER BY product_number`
+                r.query(query, (error, results) => {
+                    if (error) {
+                        r.release()
+                        console.log(error)
+                        return res.status(201).json({ message: error })
+                    } else {
+                        if (results.rows.length > 0) {
+                            console.log(results.rows)
+                            r.release()
+                            return res.status(200).json({ data: results.rows })
+                        } else {
+                            r.release()
+                            res.status(201).json({ message: 'No Sales Yet' })
+                        }
+                    }
+                })
+
+            } catch (error) {
+                r.release()
+                return res.status(201).json({ message: error })
+            }
+        } else {
+            r.release()
+
+            return res.status(201).json({ message: 'Database Connection failed' })
+        }
+    })
+})
+
+
+router.post('/stockreport', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    await pool.connect().then(async (r) => {
+        let data = req.body
+        const startDate = data.startDate;
+        const endDate = data.endDate;
+        if (r._connected) {
+            // const customOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
+            // let formattedDate = new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated)
+            // console.log(new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated));
+            console.log(startDate, endDate)
+            try {
+                query = `SELECT 
+                    products.serialnumber,
+                    products.name,
+                    productbrand.brandid,
+                    productbrand.title,
+                    SUM(tb_daily_rotating_stock.avaible_quantity) AS previousStock,
+                    SUM(tb_daily_rotating_stock.new_quantity) AS newStock,
+                    SUM(tb_daily_rotating_stock.new_quantity + tb_daily_rotating_stock.avaible_quantity) AS totalStock,
+                    SUM(tb_daily_rotating_stock.quantity_sold) AS stockSold,
+                    (SUM(tb_daily_rotating_stock.new_quantity + tb_daily_rotating_stock.avaible_quantity) - SUM(tb_daily_rotating_stock.quantity_sold)) AS stockBalance, tb_daily_rotating_stock.date_posted 
+                FROM tb_daily_rotating_stock 
+                LEFT JOIN products 
+                    ON tb_daily_rotating_stock.product_number = products.serialnumber
+                LEFT JOIN productbrand 
+                    ON tb_daily_rotating_stock.product_brand = productbrand.brandid 
+                WHERE tb_daily_rotating_stock.date_posted BETWEEN $1 AND $2
+                GROUP BY 
+                    products.serialnumber,
+                    products.name,
+                    productbrand.brandid,
+                    productbrand.title,
+                    tb_daily_rotating_stock.date_posted`
+                r.query(query, [startDate, endDate], (error, results) => {
+                    if (error) {
+                        r.release()
+                        console.log(error)
+                        return res.status(201).json({ message: error })
+                    } else {
+                        if (results.rows.length > 0) {
+                            console.log(results.rows)
+                            r.release()
+                            return res.status(200).json({ data: results.rows })
+                        } else {
+                            r.release()
+                            console.log('no invoice found')
+                            res.status(201).json({ message: 'No invoice today' })
+                        }
+                    }
+                })
+            } catch (error) {
+                r.release()
+                console.log(error)
+                return res.status(201).json({ message: error })
+
+            }
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Database Connection failed' })
+        }
+    })
+})
+
+
+
+
+
+router.post('/loadAll_Stocks', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    await pool.connect().then(async (r) => {
+        let data = req.body
+        //  const startDate = data.startDate;
+        // const endDate = data.endDate;
+        if (r._connected) {
+
+            try {
+                query = `SELECT 
+                    products.serialnumber,
+                    products.name,
+                    productbrand.brandid,
+                    productbrand.title,
+                    SUM(tb_daily_rotating_stock.avaible_quantity) AS previousStock,
+                    SUM(tb_daily_rotating_stock.new_quantity) AS newStock,
+                    SUM(tb_daily_rotating_stock.new_quantity + tb_daily_rotating_stock.avaible_quantity) AS totalStock,
+                    SUM(tb_daily_rotating_stock.quantity_sold) AS stockSold,
+                    (SUM(tb_daily_rotating_stock.new_quantity + tb_daily_rotating_stock.avaible_quantity) - SUM(tb_daily_rotating_stock.quantity_sold)) AS stockBalance, tb_daily_rotating_stock.date_posted 
+                FROM tb_daily_rotating_stock 
+                LEFT JOIN products 
+                    ON tb_daily_rotating_stock.product_number = products.serialnumber
+                LEFT JOIN productbrand 
+                    ON tb_daily_rotating_stock.product_brand = productbrand.brandid 
+                GROUP BY 
+                    products.serialnumber,
+                    products.name,
+                    productbrand.brandid,
+                    productbrand.title,
+                    tb_daily_rotating_stock.date_posted`
+                r.query(query, (error, results) => {
+                    if (error) {
+                        r.release()
+                        console.log(error)
+                        return res.status(201).json({ message: error })
+                    } else {
+                        if (results.rows.length > 0) {
+                            console.log(results.rows)
+                            r.release()
+                            return res.status(200).json({ data: results.rows })
+                        } else {
+                            r.release()
+                            console.log('no invoice found')
+                            res.status(201).json({ message: 'No invoice today' })
+                        }
+                    }
+                })
+            } catch (error) {
+                r.release()
+                console.log(error)
+                return res.status(201).json({ message: error })
+            }
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Database Connection failed' })
+        }
+    })
+})
+
+
+// 
+
+
+router.post('/currentsales', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    await pool.connect().then(async (r) => {
+        let data = req.body
+        console.log(data.startDate);
+        if (r._connected) {
+            // const customOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
+            // let formattedDate = new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated)
+            // console.log(new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated));
+            try {
+                query = `SELECT
+                    invoice_number,
+                    invoice_total,
+                    amount_paid,
+                    balance,
+                    isinvoice_verified,
+                    sales_type,dateposted,
+                    store_verified 
+                 FROM 
+                    invoice_summaries WHERE dateposted=$1
+                UNION
+                SELECT 
+                    invoice_number,
+                    invoice_total,
+                    amount_paid,
+                    balance,
+                    isinvoice_verified,
+                    sales_type,
+                    dateposted,
+                    store_verified 
+                FROM
+                     tb_credit_invoice_summary 
+                 WHERE 
+                  dateposted=$1
+                `;
+                r.query(query, [data.startDate], (error, results) => {
+                    if (error) {
+                        r.release()
+                        console.log(error)
+                        return res.status(201).json({ message: error })
+                    } else {
+                        if (results.rows.length > 0) {
+                            console.log('Prepared Credit Invoices', results.rows)
+                            r.release()
+                            return res.status(200).json({ data: results.rows })
+                        } else {
+                            r.release()
+                            console.log('Sales not made for today')
+                            res.status(201).json({ message: 'No invoice today' })
+                        }
+                    }
+                })
+            } catch (error) {
+                r.release()
+                   console.log(error)
+                return res.status(201).json({ message: error })
+             
+            }
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Database Connection failed' })
+        }
+    })
+})
+
+
+
+router.post('/salesforaperiod', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    await pool.connect().then(async (r) => {
+        let data = req.body
+        console.log(data.startDate);
+        if (r._connected) {
+            // const customOptions = { year: 'numeric', month: '2-digit', day: '2-digit' };
+            // let formattedDate = new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated)
+            // console.log(new Intl.DateTimeFormat('sv-SE', customOptions).format(data.dated));
+            try {
+                query = `SELECT
+                    invoice_number,
+                    invoice_total,
+                    amount_paid,
+                    balance,
+                    isinvoice_verified,
+                    sales_type,dateposted,
+                    store_verified,payment_progress,is_payment_complete  
+                 FROM 
+                    invoice_summaries WHERE   dateposted BETWEEN $1 AND $2
+                UNION
+                SELECT 
+                    invoice_number,
+                    invoice_total,
+                    amount_paid,
+                    balance,
+                    isinvoice_verified,
+                    sales_type,
+                    dateposted,
+                    store_verified,payment_progress,is_payment_complete 
+                FROM
+                     tb_credit_invoice_summary 
+                 WHERE dateposted BETWEEN $1 AND  $2
+                `;
+                r.query(query, [data.startDate,data.endDate], (error, results) => {
+                    if (error) {
+                        r.release()
+                        console.log(error)
+                        return res.status(201).json({ message: error })
+                    } else {
+                        if (results.rows.length > 0) {
+                            console.log('Prepared Credit Invoices', results.rows)
+                            r.release()
+                            return res.status(200).json({ data: results.rows })
+                        } else {
+                            r.release()
+                            console.log('Sales not made for today')
+                            res.status(201).json({ message: 'No invoice today' })
+                        }
+                    }
+                })
+            } catch (error) {
+                r.release()
+                   console.log(error)
+                return res.status(201).json({ message: error })
+             
+            }
+        } else {
+            r.release()
+            return res.status(201).json({ message: 'Database Connection failed' })
+        }
+    })
+})
+
+
+
+
+router.post('/show_All_Invoices', cors({ origin: '*' }), async (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*'); // Allow all origins, or specify a specific origin
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS'); // Allow specified methods
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept'); // Allow specified headers
+    await pool.connect().then(async (r) => {
+        if (r._connected) {
+           
+            try {
+                query = `SELECT
+                    invoice_number,
+                    invoice_total,
+                    amount_paid,
+                    balance,
+                    isinvoice_verified,
+                    sales_type,dateposted,
+                    store_verified,payment_progress,is_payment_complete  
+                 FROM 
+                    invoice_summaries
+                UNION
+                SELECT 
+                    invoice_number,
+                    invoice_total,
+                    amount_paid,
+                    balance,
+                    isinvoice_verified,
+                    sales_type,
+                    dateposted,
+                    store_verified,payment_progress,is_payment_complete 
+                FROM
+                     tb_credit_invoice_summary 
+                `;
+                r.query(query,(error, results) => {
+                    if (error) {
+                        r.release()
+                        console.log(error)
+                        return res.status(201).json({ message: error })
+                    } else {
+                        if (results.rows.length > 0) {
+                            console.log('Prepared Credit Invoices', results.rows)
+                            r.release()
+                            return res.status(200).json({ data: results.rows })
+                        } else {
+                            r.release()
+                            console.log('Sales not made for today')
+                            res.status(201).json({ message: 'No invoice today' })
+                        }
+                    }
+                })
+            } catch (error) {
+                r.release()
+                   console.log(error)
+                return res.status(201).json({ message: error })
+             
+            }
+        } else {
+            r.release()
             return res.status(201).json({ message: 'Database Connection failed' })
         }
     })
